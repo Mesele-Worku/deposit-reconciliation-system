@@ -1,3 +1,4 @@
+console.log("→ loading", __filename);
 require("dotenv").config();
 
 const app = require("./app");
