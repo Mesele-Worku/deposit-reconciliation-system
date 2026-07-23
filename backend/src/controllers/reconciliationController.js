@@ -1,27 +1,65 @@
-const reconciliationService =
-require("../services/reconciliationService");
+// const reconciliationService =
+// require("../services/reconciliationService");
 
+// const getStatus = async (req, res) => {
 
-const getStatus = async (req, res) => {
+//     try {
 
-    try {
+//         const result =
+//             await reconciliationService.runReconciliation();
 
-        const result =
-            await reconciliationService.runReconciliation();
+//         res.json(result);
 
-        res.json(result);
+//     } catch(error) {
 
-    } catch(error) {
+//         res.status(500).json({
+//             message:error.message
+//         });
 
-        res.status(500).json({
-            message:error.message
-        });
+//     }
 
-    }
+// };
 
+// module.exports = {
+//     getStatus
+// };
+
+const reconciliationService = require("../services/reconciliationService");
+
+const run = async (req, res) => {
+  try {
+    const result = await reconciliationService.runReconciliation();
+
+    res.json({
+      message: "Reconciliation completed successfully",
+
+      data: result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message,
+    });
+  }
 };
 
+const getStatus = async (req, res) => {
+  try {
+    const result = await reconciliationService.runReconciliation();
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
 
 module.exports = {
-    getStatus
+  run,
+
+  getStatus,
 };
