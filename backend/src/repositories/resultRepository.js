@@ -1,60 +1,149 @@
-const connectOracle = require("../config/oracle");
+const connectOracle =
+    require("../config/oracle");
+
+
 
 const saveResult = async (data) => {
-  const connection = await connectOracle();
 
-  await connection.execute(
-    `
-INSERT INTO TESTUSER.RECONCILIATION_RESULT
+    const connection =
+        await connectOracle();
 
-(
-RUN_ID,
-RULE_NAME,
-STATUS,
-EXPECTED_VALUE,
-ACTUAL_VALUE,
-DIFFERENCE,
-MESSAGE
-)
 
-VALUES
+    await connection.execute(
 
-(
-:runId,
-:ruleName,
-:status,
-:expected,
-:actual,
-:diff,
-:p_message
-)
+        `
+        INSERT INTO TESTUSER.RECONCILIATION_RESULT
+        (
+            RUN_ID,
+            RULE_NAME,
+            STATUS,
+            EXPECTED_VALUE,
+            ACTUAL_VALUE,
+            DIFFERENCE,
+            MESSAGE
+        )
+        VALUES
+        (
+            :runId,
+            :ruleName,
+            :status,
+            :expected,
+            :actual,
+            :difference,
+            :message
+        )
+        `,
 
-`,
+        {
 
-    {
-      runId: data.runId,
+            runId: data.runId,
 
-      ruleName: data.ruleName,
+            ruleName: data.ruleName,
 
-      status: data.status,
+            status: data.status,
 
-      expected: data.expected,
+            expected: data.expected,
 
-      actual: data.actual,
+            actual: data.actual,
 
-      diff: data.difference,
+            difference: data.difference,
 
-      p_message: data.message,
-    },
+            message: data.message
 
-    {
-      autoCommit: true,
-    },
-  );
+        },
 
-  await connection.close();
+        {
+            autoCommit: true
+        }
+
+    );
+
+
+    await connection.close();
+
 };
 
+
+
+
+
+
+
+const getResultsByRun = async (runId) => {
+
+
+    const connection =
+        await connectOracle();
+
+
+
+    const result =
+        await connection.execute(
+
+            `
+            SELECT
+
+                RULE_NAME AS NAME,
+
+                STATUS,
+
+                EXPECTED_VALUE,
+
+                ACTUAL_VALUE,
+
+                DIFFERENCE,
+
+                MESSAGE
+
+
+            FROM TESTUSER.RECONCILIATION_RESULT
+
+
+            WHERE RUN_ID = :runId
+
+
+            ORDER BY RESULT_ID
+
+            `,
+
+
+            {
+                runId
+            },
+
+
+            {
+
+                outFormat:
+                    require("oracledb")
+                        .OUT_FORMAT_OBJECT
+
+            }
+
+
+        );
+
+
+
+    await connection.close();
+
+
+
+    return result.rows;
+
+
+};
+
+
+
+
+
+
+
 module.exports = {
-  saveResult,
+
+    saveResult,
+
+    getResultsByRun
+
 };

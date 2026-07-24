@@ -60,9 +60,13 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require("./routes/authRoutes");
 const usersRoutes = require("./routes/userRoute");
 const reconciliationRoutes = require("./routes/reconciliationRoutes");
-
+const scheduleRoutes = require("./routes/scheduleRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const jobRoutes = require("./routes/jobRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/reconciliation", reconciliationRoutes);
-
+app.use("/api/schedule", scheduleRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 module.exports = app;

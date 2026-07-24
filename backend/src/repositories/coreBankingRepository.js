@@ -13,10 +13,10 @@
 const connectOracle = require("../config/oracle");
 
 const getDepositSummary = async () => {
-  const connection = await connectOracle();
+    const connection = await connectOracle();
 
-  const result = await connection.execute(
-    `
+    const result = await connection.execute(
+        `
         SELECT
 
             TOTAL_DEPOSIT,
@@ -32,21 +32,21 @@ const getDepositSummary = async () => {
         FETCH FIRST 1 ROW ONLY
 
         `,
-  );
+    );
 
-  await connection.close();
+    await connection.close();
 
-  const row = result.rows[0];
+    const row = result.rows[0];
 
-  return {
-    totalDeposit: row[0],
+    return {
+        totalDeposit: row[0],
 
-    retailDeposit: row[1],
+        retailDeposit: row[1],
 
-    segmentationDeposit: row[2],
-  };
+        segmentationDeposit: row[2],
+    };
 };
 
 module.exports = {
-  getDepositSummary,
+    getDepositSummary,
 };

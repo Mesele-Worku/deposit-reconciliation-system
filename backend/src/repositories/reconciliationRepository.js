@@ -1,10 +1,10 @@
 const connectOracle = require("../config/oracle");
 
 const createRun = async (businessDate) => {
-  const connection = await connectOracle();
+    const connection = await connectOracle();
 
-  const result = await connection.execute(
-    `
+    const result = await connection.execute(
+        `
     INSERT INTO TESTUSER.RECONCILIATION_RUN
     (
         BUSINESS_DATE,
@@ -19,29 +19,29 @@ const createRun = async (businessDate) => {
     )
     RETURNING RUN_ID INTO :runId
     `,
-    {
-      businessDate,
+        {
+            businessDate,
 
-      runId: {
-        dir: require("oracledb").BIND_OUT,
-        type: require("oracledb").NUMBER,
-      },
-    },
-    {
-      autoCommit: true,
-    },
-  );
+            runId: {
+                dir: require("oracledb").BIND_OUT,
+                type: require("oracledb").NUMBER,
+            },
+        },
+        {
+            autoCommit: true,
+        },
+    );
 
-  await connection.close();
+    await connection.close();
 
-  return result.outBinds.runId[0];
+    return result.outBinds.runId[0];
 };
 
 const updateRunStatus = async (runId, status) => {
-  const connection = await connectOracle();
+    const connection = await connectOracle();
 
-  await connection.execute(
-    `
+    await connection.execute(
+        `
 UPDATE TESTUSER.RECONCILIATION_RUN
 
 SET
@@ -54,19 +54,19 @@ END_TIME=CURRENT_TIMESTAMP
 WHERE RUN_ID=:runId
 
 `,
-    {
-      status,
-      runId,
-    },
-    {
-      autoCommit: true,
-    },
-  );
+        {
+            status,
+            runId,
+        },
+        {
+            autoCommit: true,
+        },
+    );
 
-  await connection.close();
+    await connection.close();
 };
 
 module.exports = {
-  createRun,
-  updateRunStatus,
+    createRun,
+    updateRunStatus,
 };
