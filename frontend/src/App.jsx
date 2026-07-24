@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/users/UserManagment';
 import ProtectedRoute from './components/ProtectedRoute';
 import RunReconciliation from './pages/reconciliation/RunReconciliation';
+import SchedulerManagement from "./pages/SchedulerManagement";
 
 function App() {
   return (
@@ -41,6 +42,12 @@ function App() {
           <ProtectedRoute role="ADMIN">
             <RunReconciliation />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/scheduler"
+        element={
+          <SchedulerManagement />
         }
       />
     </Routes>

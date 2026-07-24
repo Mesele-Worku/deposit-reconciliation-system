@@ -1,39 +1,115 @@
-import { motion } from 'framer-motion';
+const SummaryCard = ({
+  title,
+  value,
+  icon,
+  color
+}) => {
 
-const SummaryCard = ({ title, value, icon, color }) => {
+
+
   return (
-    <motion.div
-      whileHover={{
-        scale: 1.03,
-      }}
 
-      className="w-full rounded-xl border-t-4 bg-white p-4 shadow sm:p-6"
 
-      style={{
-        borderColor: color,
-      }}
+    <div
+      className="
+            rounded-xl
+            bg-white
+            p-5
+            shadow
+            "
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-xs text-gray-500 sm:text-sm">{title}</p>
 
-          <h2 className="mt-2 text-xl font-bold break-words sm:text-3xl">
-            {typeof value === 'number' ? value.toLocaleString() : value}
-          </h2>
+
+
+      <div
+        className="
+                flex
+                items-center
+                justify-between
+                "
+      >
+
+
+
+        <div>
+
+
+          <p
+            className="
+                        text-sm
+                        text-gray-500
+                        "
+          >
+
+            {title}
+
+          </p>
+
+
+
+
+
+          <p
+            className="
+                        mt-2
+                        text-xl
+                        font-bold
+                        text-gray-800
+                        sm:text-2xl
+                        "
+          >
+
+            {
+              Number(value || 0)
+                .toLocaleString()
+            }
+
+
+          </p>
+
+
+
         </div>
+
+
+
+
+
+
 
         <div
-          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-white sm:h-16 sm:w-16"
-
+          className="
+                    rounded-full
+                    p-4
+                    text-white
+                    "
           style={{
-            background: color,
+            backgroundColor: color
           }}
         >
-          {icon}
+
+          {
+            icon
+          }
+
+
         </div>
+
+
+
       </div>
-    </motion.div>
+
+
+
+
+    </div>
+
+
   );
+
+
 };
+
+
 
 export default SummaryCard;
