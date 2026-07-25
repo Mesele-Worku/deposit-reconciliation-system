@@ -1,17 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import api from "../api/axios";
+import api from '../api/axios';
 
-import Navbar from "../components/Navbar";
+import Navbar from '../components/Navbar';
 
-import DashboardHeader from "../components/dashboard/DashboardHeader";
-import MonitoringCards from "../components/dashboard/MonitoringCharts";
-import SchedulerCard from "../components/dashboard/SchedulerCard";
-import RuleSection from "../components/dashboard/RuleSection";
-import AnalyticsSection from "../components/dashboard/AnalyticsSection";
-import SegmentSection from "../components/dashboard/SegmentSecton";
-import RecentJobsTable from "../components/dashboard/RecentJobsTable";
-import DashboardFooter from "../components/dashboard/DashboardFooter";
+import DashboardHeader from '../components/dashboard/DashboardHeader';
+import MonitoringCards from '../components/dashboard/MonitoringCharts';
+import SchedulerCard from '../components/dashboard/SchedulerCard';
+import RuleSection from '../components/dashboard/RuleSection';
+import AnalyticsSection from '../components/dashboard/AnalyticsSection';
+import SegmentSection from '../components/dashboard/SegmentSecton';
+import RecentJobsTable from '../components/dashboard/RecentJobsTable';
+import DashboardFooter from '../components/dashboard/DashboardFooter';
 
 const Dashboard = () => {
   const [dashboard, setDashboard] = useState(null);
@@ -24,13 +24,13 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      const response = await api.get("/dashboard/status");
+      const response = await api.get('/dashboard/status');
 
       setDashboard(response.data);
 
       setLastRefresh(new Date());
     } catch (error) {
-      console.error("Dashboard loading error:", error);
+      console.error('Dashboard loading error:', error);
     } finally {
       setLoading(false);
     }
@@ -54,27 +54,19 @@ const Dashboard = () => {
       loadDashboard();
     };
 
-    window.addEventListener(
-      "reconciliationCompleted",
-      handleReconciliationCompleted
-    );
+    window.addEventListener('reconciliationCompleted', handleReconciliationCompleted);
 
     return () => {
       clearInterval(timer);
 
-      window.removeEventListener(
-        "reconciliationCompleted",
-        handleReconciliationCompleted
-      );
+      window.removeEventListener('reconciliationCompleted', handleReconciliationCompleted);
     };
   }, []);
 
   if (loading || !dashboard) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <h2 className="text-xl font-bold text-[#232A78]">
-          Loading Dashboard...
-        </h2>
+        <h2 className="text-xl font-bold text-[#232A78]">Loading Dashboard...</h2>
       </div>
     );
   }
@@ -83,7 +75,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-slate-100">
       <Navbar />
 
-      <main className="mx-auto max-w-7xl p-4 md:p-6">
+      <main className="max-w-8xl mx-auto p-4 md:p-6">
         {/* Header */}
         <DashboardHeader
           systemStatus={dashboard.systemStatus}
@@ -92,10 +84,7 @@ const Dashboard = () => {
         />
 
         {/* Deposit Summary */}
-        <MonitoringCards
-          deposits={dashboard.deposits}
-          jobs={dashboard.jobs}
-        />
+        <MonitoringCards deposits={dashboard.deposits} jobs={dashboard.jobs} />
 
         {/* Scheduler & Recent Jobs */}
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
@@ -108,10 +97,7 @@ const Dashboard = () => {
         <RuleSection rules={dashboard.rules} />
 
         {/* Analytics */}
-        <AnalyticsSection
-          deposits={dashboard.deposits}
-          segments={dashboard.segments}
-        />
+        <AnalyticsSection deposits={dashboard.deposits} segments={dashboard.segments} />
 
         {/* Segments */}
         <SegmentSection segments={dashboard.segments} />
