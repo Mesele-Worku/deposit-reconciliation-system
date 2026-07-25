@@ -1,19 +1,14 @@
-const scheduleRepository =
-    require("../repositories/scheduleRepository");
+const scheduleRepository = require("../repositories/scheduleRepository");
 
 const getSchedule = async () => {
-    return await scheduleRepository.getSchedule();
+  return await scheduleRepository.getSchedule();
 };
 
-const updateSchedule = async (data) => {
-    await scheduleRepository.updateSchedule(data);
-
-    return {
-        message: "Schedule updated successfully"
-    };
+const saveSchedule = async (data) => {
+  return await scheduleRepository.saveSchedule(data);
 };
 
 module.exports = {
-    getSchedule,
-    updateSchedule
+  getSchedule,
+  saveSchedule,
 };
