@@ -6,8 +6,8 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/users/UserManagment';
 import ProtectedRoute from './components/ProtectedRoute';
 import RunReconciliation from './pages/reconciliation/RunReconciliation';
-import SchedulerManagement from "./pages/SchedulerManagement";
-
+import SchedulerManagement from './pages/SchedulerManagement';
+import NotificationManagement from './pages/NotificationManagment';
 function App() {
   return (
     <Routes>
@@ -44,12 +44,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/admin/scheduler"
-        element={
-          <SchedulerManagement />
-        }
-      />
+      <Route path="/admin/scheduler" element={<SchedulerManagement />} />
+      <Route path="/notifications" element={<NotificationManagement />} />
     </Routes>
   );
 }
