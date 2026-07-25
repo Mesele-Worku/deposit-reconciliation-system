@@ -63,10 +63,14 @@ const reconciliationRoutes = require("./routes/reconciliationRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const jobRoutes = require("./routes/jobRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/reconciliation", reconciliationRoutes);
 app.use("/api/schedule", scheduleRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/test", require("./routes/testEmailRoutes"));
 module.exports = app;
