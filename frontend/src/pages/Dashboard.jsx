@@ -45,22 +45,22 @@ const Dashboard = () => {
     initializeDashboard();
 
     // Auto refresh every minute
-    const timer = setInterval(() => {
-      loadDashboard();
-    }, 60000);
+    // const timer = setInterval(() => {
+    //   loadDashboard();
+    // }, 60000);
 
     // Refresh after manual reconciliation
-    const handleReconciliationCompleted = () => {
-      loadDashboard();
-    };
+    // const handleReconciliationCompleted = () => {
+    //   loadDashboard();
+    // };
 
-    window.addEventListener('reconciliationCompleted', handleReconciliationCompleted);
+    // window.addEventListener('reconciliationCompleted', handleReconciliationCompleted);
 
-    return () => {
-      clearInterval(timer);
+    // return () => {
+    //   clearInterval(timer);
 
-      window.removeEventListener('reconciliationCompleted', handleReconciliationCompleted);
-    };
+    //   window.removeEventListener('reconciliationCompleted', handleReconciliationCompleted);
+    // };
   }, []);
 
   if (loading || !dashboard) {
