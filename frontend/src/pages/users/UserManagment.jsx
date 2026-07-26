@@ -131,7 +131,7 @@
 // export default UserManagement;
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import { FaSearch, FaUserPlus, FaUsers, FaSyncAlt } from 'react-icons/fa';
 
 import api from '../../api/axios';
