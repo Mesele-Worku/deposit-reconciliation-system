@@ -75,7 +75,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-slate-100">
       <Navbar />
 
-      <main className="max-w-8xl mx-auto p-4 md:p-6">
+      <main className="mx-auto max-w-[1900px] p-4 md:p-6">
         {/* Header */}
         <DashboardHeader
           systemStatus={dashboard.systemStatus}
@@ -86,6 +86,9 @@ const Dashboard = () => {
         {/* Deposit Summary */}
         <MonitoringCards deposits={dashboard.deposits} jobs={dashboard.jobs} />
 
+        {/* Reconciliation Rules */}
+        <RuleSection rules={dashboard.rules} />
+
         {/* Scheduler & Recent Jobs */}
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <SchedulerCard scheduler={dashboard.scheduler} />
@@ -93,11 +96,8 @@ const Dashboard = () => {
           <RecentJobsTable jobs={dashboard.recentJobs} />
         </div>
 
-        {/* Reconciliation Rules */}
-        <RuleSection rules={dashboard.rules} />
-
         {/* Analytics */}
-        <AnalyticsSection deposits={dashboard.deposits} segments={dashboard.segments} />
+        {/* <AnalyticsSection deposits={dashboard.deposits} segments={dashboard.segments} /> */}
 
         {/* Segments */}
         <SegmentSection segments={dashboard.segments} />
