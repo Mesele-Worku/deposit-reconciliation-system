@@ -1,58 +1,13 @@
-const SegmentCard = ({
-  name,
-  value
-}) => {
-
-
+const SegmentCard = ({ name, value }) => {
   return (
+    <div className="rounded-xl bg-white p-4 shadow">
+      <p className="text-center text-sm text-gray-500 uppercase">{name}</p>
 
-    <div
-      className="
-            rounded-xl
-            bg-white
-            p-4
-            shadow
-            "
-    >
-
-
-      <p
-        className="
-                text-sm
-                text-gray-500
-                "
-      >
-
-        {name}
-
+      <p className="mt-2 text-center text-sm font-bold text-[#232A78] md:text-lg">
+        {Number(value || 0).toLocaleString()}
       </p>
-
-
-
-
-      <p
-        className="
-                mt-2
-                text-lg
-                font-bold
-                text-[#232A78]
-                "
-      >
-
-        {
-          Number(value || 0)
-            .toLocaleString()
-        }
-
-      </p>
-
-
-
     </div>
-
   );
-
 };
-
 
 export default SegmentCard;

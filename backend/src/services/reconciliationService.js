@@ -1,4 +1,3 @@
-
 // const coreRepository = require("../repositories/coreBankingRepository");
 
 // const warehouseRepository = require("../repositories/warehouseRepository");
@@ -212,7 +211,6 @@
 //   runReconciliation,
 // };
 
-
 const coreRepository = require("../repositories/coreBankingRepository");
 
 const warehouseRepository = require("../repositories/warehouseRepository");
@@ -224,31 +222,24 @@ const resultRepository = require("../repositories/resultRepository");
 const notificationService = require("./notificationService");
 
 const runReconciliation = async () => {
+  const businessDate = new Date().toISOString().substring(0, 10);
 
-  const businessDate =
-    new Date().toISOString().substring(0, 10);
-
-  const runId =
-    await reconciliationRepository.createRun(
-      businessDate
-    );
+  const runId = await reconciliationRepository.createRun(businessDate);
 
   try {
-
     /*
     ===============================
     GET SOURCE DATA
     ===============================
     */
-
-    const core =
-      await coreRepository.getDepositSummary();
+    // Load latest DWH data
+    await warehouseRepository.loadDepositSummary(businessDate);
+    const core = await coreRepository.getDepositSummary();
 
     console.log("CORE DATA:");
     console.log(core);
-
-    const warehouse =
-      await warehouseRepository.getDepositSummary();
+    console.log(core.totalDeposit);
+    const warehouse = await warehouseRepository.getDepositSummary();
 
     console.log("WAREHOUSE DATA:");
     console.log(warehouse);
@@ -259,37 +250,24 @@ const runReconciliation = async () => {
     ===============================
     */
 
-    const rule1Difference =
-      core.totalDeposit -
-      warehouse.totalDeposit;
+    const rule1Difference = core.totalDeposit - warehouse.totalDeposit;
 
-    const rule1 =
-      rule1Difference === 0;
+    const rule1 = rule1Difference === 0;
 
     await resultRepository.saveResult({
-
       runId,
 
-      ruleName:
-        "CORE VS WAREHOUSE TOTAL DEPOSIT",
+      ruleName: "CORE VS WAREHOUSE TOTAL DEPOSIT",
 
-      status:
-        rule1 ? "PASS" : "FAIL",
+      status: rule1 ? "PASS" : "FAIL",
 
-      expected:
-        core.totalDeposit,
+      expected: core.totalDeposit,
 
-      actual:
-        warehouse.totalDeposit,
+      actual: warehouse.totalDeposit,
 
-      difference:
-        rule1Difference,
+      difference: rule1Difference,
 
-      message:
-        rule1
-          ? "Deposit matched"
-          : "Deposit mismatch"
-
+      message: rule1 ? "Deposit matched" : "Deposit mismatch",
     });
 
     /*
@@ -299,40 +277,28 @@ const runReconciliation = async () => {
     */
 
     const calculatedTotal =
-      warehouse.retailDeposit +
-      warehouse.segmentationDeposit;
+      warehouse.retailDeposit + warehouse.segmentationDeposit;
 
-    const rule2Difference =
-      calculatedTotal -
-      warehouse.totalDeposit;
+    const rule2Difference = calculatedTotal - warehouse.totalDeposit;
 
-    const rule2 =
-      rule2Difference === 0;
+    const rule2 = rule2Difference === 0;
 
     await resultRepository.saveResult({
-
       runId,
 
-      ruleName:
-        "Retail + Segmentation Validation",
+      ruleName: "Retail + Segmentation Validation",
 
-      status:
-        rule2 ? "PASS" : "FAIL",
+      status: rule2 ? "PASS" : "FAIL",
 
-      expected:
-        warehouse.totalDeposit,
+      expected: warehouse.totalDeposit,
 
-      actual:
-        calculatedTotal,
+      actual: calculatedTotal,
 
-      difference:
-        rule2Difference,
+      difference: rule2Difference,
 
-      message:
-        rule2
-          ? "Retail and segmentation matched"
-          : "Retail and segmentation mismatch"
-
+      message: rule2
+        ? "Retail and segmentation matched"
+        : "Retail and segmentation mismatch",
     });
 
     /*
@@ -341,46 +307,31 @@ const runReconciliation = async () => {
     ===============================
     */
 
-    const segments =
-      warehouse.segments || {};
+    const segments = warehouse.segments || {};
 
-    const segmentTotal =
-      Object.values(segments).reduce(
-        (sum, value) => sum + value,
-        0
-      );
+    const segmentTotal = Object.values(segments).reduce(
+      (sum, value) => sum + value,
+      0,
+    );
 
-    const rule3Difference =
-      segmentTotal -
-      warehouse.segmentationDeposit;
+    const rule3Difference = segmentTotal - warehouse.segmentationDeposit;
 
-    const rule3 =
-      rule3Difference === 0;
+    const rule3 = rule3Difference === 0;
 
     await resultRepository.saveResult({
-
       runId,
 
-      ruleName:
-        "Segment Total Validation",
+      ruleName: "Segment Total Validation",
 
-      status:
-        rule3 ? "PASS" : "FAIL",
+      status: rule3 ? "PASS" : "FAIL",
 
-      expected:
-        warehouse.segmentationDeposit,
+      expected: warehouse.segmentationDeposit,
 
-      actual:
-        segmentTotal,
+      actual: segmentTotal,
 
-      difference:
-        rule3Difference,
+      difference: rule3Difference,
 
-      message:
-        rule3
-          ? "Segments matched"
-          : "Segments mismatch"
-
+      message: rule3 ? "Segments matched" : "Segments mismatch",
     });
 
     /*
@@ -389,10 +340,7 @@ const runReconciliation = async () => {
     ===============================
     */
 
-    await reconciliationRepository.updateRunStatus(
-      runId,
-      "COMPLETED"
-    );
+    await reconciliationRepository.updateRunStatus(runId, "COMPLETED");
 
     /*
     ===============================
@@ -403,36 +351,24 @@ const runReconciliation = async () => {
     const failedRules = [];
 
     if (!rule1) {
-
       failedRules.push({
-        name:
-          "Core Vs Warehouse Deposit",
-        difference:
-          rule1Difference
+        name: "Core Vs Warehouse Deposit",
+        difference: rule1Difference,
       });
-
     }
 
     if (!rule2) {
-
       failedRules.push({
-        name:
-          "Retail + Segmentation Validation",
-        difference:
-          rule2Difference
+        name: "Retail + Segmentation Validation",
+        difference: rule2Difference,
       });
-
     }
 
     if (!rule3) {
-
       failedRules.push({
-        name:
-          "Segment Total Validation",
-        difference:
-          rule3Difference
+        name: "Segment Total Validation",
+        difference: rule3Difference,
       });
-
     }
 
     /*
@@ -442,45 +378,27 @@ const runReconciliation = async () => {
     */
 
     if (failedRules.length === 0) {
-
       await notificationService.reconciliationSuccess({
+        RUN_ID: runId,
 
-        RUN_ID:
-          runId,
+        BUSINESS_DATE: businessDate,
 
-        BUSINESS_DATE:
-          businessDate,
+        CORE_DEPOSIT: core.totalDeposit,
 
-        CORE_DEPOSIT:
-          core.totalDeposit,
-
-        WAREHOUSE_DEPOSIT:
-          warehouse.totalDeposit
-
+        WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
       });
-
-    }
-    else {
-
+    } else {
       await notificationService.reconciliationFailure({
+        RUN_ID: runId,
 
-        RUN_ID:
-          runId,
+        BUSINESS_DATE: businessDate,
 
-        BUSINESS_DATE:
-          businessDate,
+        CORE_DEPOSIT: core.totalDeposit,
 
-        CORE_DEPOSIT:
-          core.totalDeposit,
+        WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
 
-        WAREHOUSE_DEPOSIT:
-          warehouse.totalDeposit,
-
-        FAILED_RULES:
-          failedRules
-
+        FAILED_RULES: failedRules,
       });
-
     }
 
     /*
@@ -490,102 +408,63 @@ const runReconciliation = async () => {
     */
 
     return {
-
       runId,
 
-      timestamp:
-        new Date(),
+      timestamp: new Date(),
 
-      monitoringStatus:
-        "ACTIVE",
+      monitoringStatus: "ACTIVE",
 
-      coreDeposit:
-        core.totalDeposit,
+      coreDeposit: core.totalDeposit,
 
-      warehouseDeposit:
-        warehouse.totalDeposit,
+      warehouseDeposit: warehouse.totalDeposit,
 
-      retailDeposit:
-        warehouse.retailDeposit,
+      retailDeposit: warehouse.retailDeposit,
 
-      segmentationDeposit:
-        warehouse.segmentationDeposit,
+      segmentationDeposit: warehouse.segmentationDeposit,
 
-      segments:
-        warehouse.segments,
+      segments: warehouse.segments,
 
       rule1: {
+        name: "Warehouse Total Deposit Vs Core Total Deposit",
 
-        name:
-          "Warehouse Total Deposit Vs Core Total Deposit",
+        status: rule1 ? "PASS" : "FAIL",
 
-        status:
-          rule1 ? "PASS" : "FAIL",
-
-        difference:
-          rule1Difference
-
+        difference: rule1Difference,
       },
 
       rule2: {
+        name: "Retail + Segmentation Validation",
 
-        name:
-          "Retail + Segmentation Validation",
+        status: rule2 ? "PASS" : "FAIL",
 
-        status:
-          rule2 ? "PASS" : "FAIL",
-
-        difference:
-          rule2Difference
-
+        difference: rule2Difference,
       },
 
       rule3: {
+        name: "Segment Total Validation",
 
-        name:
-          "Segment Total Validation",
+        status: rule3 ? "PASS" : "FAIL",
 
-        status:
-          rule3 ? "PASS" : "FAIL",
-
-        difference:
-          rule3Difference
-
-      }
-
+        difference: rule3Difference,
+      },
     };
-
-  }
-  catch (error) {
-
+  } catch (error) {
     console.error(error);
 
-    await reconciliationRepository.updateRunStatus(
-      runId,
-      "FAILED"
-    );
+    await reconciliationRepository.updateRunStatus(runId, "FAILED");
 
     await notificationService.reconciliationFailure({
+      RUN_ID: runId,
 
-      RUN_ID:
-        runId,
+      BUSINESS_DATE: businessDate,
 
-      BUSINESS_DATE:
-        businessDate,
-
-      ERROR:
-        error.message
-
+      ERROR: error.message,
     });
 
     throw error;
-
   }
-
 };
 
 module.exports = {
-
-  runReconciliation
-
+  runReconciliation,
 };

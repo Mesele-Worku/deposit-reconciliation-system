@@ -10,6 +10,10 @@ const sendEmail = async ({ to, subject, text, html }) => {
 
     family: 4,
 
+    dns: {
+      family: 4,
+    },
+
     auth: {
       user: process.env.EMAIL_USER,
 

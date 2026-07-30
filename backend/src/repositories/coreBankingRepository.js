@@ -13,40 +13,40 @@
 const connectOracle = require("../config/oracle");
 
 const getDepositSummary = async () => {
-    const connection = await connectOracle();
+  // const connection = await connectOracle();
 
-    const result = await connection.execute(
-        `
-        SELECT
+  //   const result = await connection.execute(
+  //     `
+  //         SELECT
 
-            TOTAL_DEPOSIT,
-            RETAIL_DEPOSIT,
-            SEGMENTATION_DEPOSIT
+  //             TOTAL_DEPOSIT,
+  //             RETAIL_DEPOSIT,
+  //             SEGMENTATION_DEPOSIT
 
-        FROM TESTUSER.DEPOSIT_SUMMARY
+  //         FROM TESTUSER.DEPOSIT_SUMMARY
 
-        WHERE SOURCE_SYSTEM='CORE'
+  //         WHERE SOURCE_SYSTEM='CORE'
 
-        ORDER BY BUSINESS_DATE DESC
+  //         ORDER BY BUSINESS_DATE DESC
 
-        FETCH FIRST 1 ROW ONLY
+  //         FETCH FIRST 1 ROW ONLY
 
-        `,
-    );
+  //         `,
+  //   );
 
-    await connection.close();
+  //   await connection.close();
 
-    const row = result.rows[0];
+  //   const row = result.rows[0];
 
-    return {
-        totalDeposit: row[0],
+  return {
+    totalDeposit: 479124676322.49,
 
-        retailDeposit: row[1],
+    // retailDeposit: row[1],
 
-        segmentationDeposit: row[2],
-    };
+    // segmentationDeposit: row[2],
+  };
 };
 
 module.exports = {
-    getDepositSummary,
+  getDepositSummary,
 };

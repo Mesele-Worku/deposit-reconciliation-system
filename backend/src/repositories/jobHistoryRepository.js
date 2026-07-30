@@ -2,21 +2,12 @@ const connectOracle = require("../config/oracle");
 
 const oracledb = require("oracledb");
 
-
-
 const createJob = async (jobType) => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
-            INSERT INTO TESTUSER.RECONCILIATION_JOB_HISTORY
+  const result = await connection.execute(
+    `
+            INSERT INTO APP_USER.REC_RECONCILIATION_JOB_HISTORY
             (
                 JOB_TYPE,
                 STATUS
@@ -31,57 +22,35 @@ const createJob = async (jobType) => {
             RETURNING JOB_ID INTO :jobId
             `,
 
-            {
+    {
+      jobType,
 
-                jobType,
+      jobId: {
+        dir: oracledb.BIND_OUT,
 
-                jobId: {
+        type: oracledb.NUMBER,
+      },
+    },
 
-                    dir: oracledb.BIND_OUT,
+    {
+      autoCommit: true,
+    },
+  );
 
-                    type: oracledb.NUMBER
+  await connection.close();
 
-                }
-
-            },
-
-            {
-                autoCommit: true
-            }
-
-        );
-
-
-
-    await connection.close();
-
-
-
-    return result.outBinds.jobId[0];
-
+  return result.outBinds.jobId[0];
 };
-
-
-
-
-
-
 
 // NEW METHOD
 // Link Job with Reconciliation Run
 
 const updateJobRunId = async (jobId, runId) => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    await connection.execute(
-
-        `
-        UPDATE TESTUSER.RECONCILIATION_JOB_HISTORY
+  await connection.execute(
+    `
+        UPDATE APP_USER.REC_RECONCILIATION_JOB_HISTORY
 
         SET
 
@@ -91,56 +60,26 @@ const updateJobRunId = async (jobId, runId) => {
 
         `,
 
-        {
+    {
+      runId,
 
-            runId,
+      jobId,
+    },
 
-            jobId
+    {
+      autoCommit: true,
+    },
+  );
 
-        },
-
-        {
-
-            autoCommit: true
-
-        }
-
-    );
-
-
-
-    await connection.close();
-
-
+  await connection.close();
 };
 
+const completeJob = async (jobId, status, errorMessage = null) => {
+  const connection = await connectOracle();
 
-
-
-
-
-
-
-
-const completeJob = async (
-    jobId,
-    status,
-    errorMessage = null
-) => {
-
-
-
-    const connection =
-        await connectOracle();
-
-
-
-
-    await connection.execute(
-
-
-        `
-        UPDATE TESTUSER.RECONCILIATION_JOB_HISTORY
+  await connection.execute(
+    `
+        UPDATE APP_USER.REC_RECONCILIATION_JOB_HISTORY
 
         SET
 
@@ -155,56 +94,27 @@ const completeJob = async (
 
         `,
 
+    {
+      status,
 
-        {
+      errorMessage,
 
-            status,
+      jobId,
+    },
 
-            errorMessage,
+    {
+      autoCommit: true,
+    },
+  );
 
-            jobId
-
-        },
-
-
-        {
-
-            autoCommit: true
-
-        }
-
-
-    );
-
-
-
-    await connection.close();
-
-
+  await connection.close();
 };
 
-
-
-
-
-
-
-
-
 const getLatestJobs = async () => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-
-    const result =
-        await connection.execute(
-
-
-            `
+  const result = await connection.execute(
+    `
             SELECT
 
             JOB_ID,
@@ -222,7 +132,7 @@ const getLatestJobs = async () => {
             ERROR_MESSAGE
 
 
-            FROM TESTUSER.RECONCILIATION_JOB_HISTORY
+            FROM APP_USER.REC_RECONCILIATION_JOB_HISTORY
 
 
             ORDER BY START_TIME DESC
@@ -232,44 +142,24 @@ const getLatestJobs = async () => {
 
             `,
 
+    [],
 
-            [],
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
 
+  await connection.close();
 
-            {
-
-                outFormat:
-                    oracledb.OUT_FORMAT_OBJECT
-
-            }
-
-
-        );
-
-
-
-    await connection.close();
-
-
-
-    return result.rows;
-
-
+  return result.rows;
 };
 
-
-
-
-
-
 module.exports = {
+  createJob,
 
-    createJob,
+  updateJobRunId,
 
-    updateJobRunId,
+  completeJob,
 
-    completeJob,
-
-    getLatestJobs
-
+  getLatestJobs,
 };

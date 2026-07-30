@@ -2,23 +2,14 @@ const connectOracle = require("../config/oracle");
 
 const oracledb = require("oracledb");
 
-
-
 /*
     Latest reconciliation run
 */
 const getLatestRun = async () => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
+  const result = await connection.execute(
+    `
             SELECT
 
                 RUN_ID,
@@ -36,7 +27,7 @@ const getLatestRun = async () => {
                 CREATED_DATE
 
 
-            FROM TESTUSER.RECONCILIATION_RUN
+            FROM APP_USER.REC_RECONCILIATION_RUN
 
 
             ORDER BY RUN_ID DESC
@@ -46,47 +37,29 @@ const getLatestRun = async () => {
 
             `,
 
-            [],
+    [],
 
-            {
-                outFormat:
-                    oracledb.OUT_FORMAT_OBJECT
-            }
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
 
-        );
+  await connection.close();
 
-
-
-    await connection.close();
-
-
-    return result.rows[0] || null;
-
-
+  return result.rows[0] || null;
 };
-
-
-
-
 
 /*
     Scheduler information
 */
 const getScheduler = async () => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
+  const result = await connection.execute(
+    `
             SELECT *
 
-            FROM TESTUSER.RECONCILIATION_SCHEDULE
+            FROM APP_USER.REC_RECONCILIATION_SCHEDULE
 
             WHERE STATUS='ACTIVE'
 
@@ -94,47 +67,26 @@ const getScheduler = async () => {
 
             `,
 
-            [],
+    [],
 
-            {
-                outFormat:
-                    oracledb.OUT_FORMAT_OBJECT
-            }
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
 
-        );
+  await connection.close();
 
-
-
-    await connection.close();
-
-
-
-    return result.rows[0] || null;
-
-
+  return result.rows[0] || null;
 };
-
-
-
-
-
-
 
 /*
     Job statistics
 */
 const getJobStatistics = async () => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
+  const result = await connection.execute(
+    `
             SELECT
 
             COUNT(*) TOTAL_JOBS,
@@ -167,50 +119,30 @@ const getJobStatistics = async () => {
             ) RUNNING_JOBS
 
 
-            FROM TESTUSER.RECONCILIATION_JOB_HISTORY
+            FROM APP_USER.REC_RECONCILIATION_JOB_HISTORY
 
             `,
 
-            [],
+    [],
 
-            {
-                outFormat:
-                    oracledb.OUT_FORMAT_OBJECT
-            }
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
 
-        );
+  await connection.close();
 
-
-
-    await connection.close();
-
-
-
-    return result.rows[0];
-
+  return result.rows[0];
 };
-
-
-
-
-
-
 
 /*
     Recent Jobs
 */
 const getRecentJobs = async () => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
+  const result = await connection.execute(
+    `
             SELECT
 
 
@@ -229,7 +161,7 @@ const getRecentJobs = async () => {
                 ERROR_MESSAGE
 
 
-            FROM TESTUSER.RECONCILIATION_JOB_HISTORY
+            FROM APP_USER.REC_RECONCILIATION_JOB_HISTORY
 
 
             ORDER BY JOB_ID DESC
@@ -240,41 +172,24 @@ const getRecentJobs = async () => {
 
             `,
 
-            [],
+    [],
 
-            {
-                outFormat:
-                    oracledb.OUT_FORMAT_OBJECT
-            }
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
 
-        );
+  await connection.close();
 
-
-
-    await connection.close();
-
-
-
-    return result.rows;
-
-
+  return result.rows;
 };
 
-
-
-
-
-
 module.exports = {
+  getLatestRun,
 
+  getScheduler,
 
-    getLatestRun,
+  getJobStatistics,
 
-    getScheduler,
-
-    getJobStatistics,
-
-    getRecentJobs
-
-
+  getRecentJobs,
 };

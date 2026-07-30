@@ -1,18 +1,11 @@
-const connectOracle =
-    require("../config/oracle");
-
-
+const connectOracle = require("../config/oracle");
 
 const saveResult = async (data) => {
+  const connection = await connectOracle();
 
-    const connection =
-        await connectOracle();
-
-
-    await connection.execute(
-
-        `
-        INSERT INTO TESTUSER.RECONCILIATION_RESULT
+  await connection.execute(
+    `
+        INSERT INTO APP_USER.REC_RECONCILIATION_RESULT
         (
             RUN_ID,
             RULE_NAME,
@@ -34,53 +27,35 @@ const saveResult = async (data) => {
         )
         `,
 
-        {
+    {
+      runId: data.runId,
 
-            runId: data.runId,
+      ruleName: data.ruleName,
 
-            ruleName: data.ruleName,
+      status: data.status,
 
-            status: data.status,
+      expected: data.expected,
 
-            expected: data.expected,
+      actual: data.actual,
 
-            actual: data.actual,
+      difference: data.difference,
 
-            difference: data.difference,
+      message: data.message,
+    },
 
-            message: data.message
+    {
+      autoCommit: true,
+    },
+  );
 
-        },
-
-        {
-            autoCommit: true
-        }
-
-    );
-
-
-    await connection.close();
-
+  await connection.close();
 };
 
-
-
-
-
-
-
 const getResultsByRun = async (runId) => {
+  const connection = await connectOracle();
 
-
-    const connection =
-        await connectOracle();
-
-
-
-    const result =
-        await connection.execute(
-
-            `
+  const result = await connection.execute(
+    `
             SELECT
 
                 RULE_NAME AS NAME,
@@ -96,7 +71,7 @@ const getResultsByRun = async (runId) => {
                 MESSAGE
 
 
-            FROM TESTUSER.RECONCILIATION_RESULT
+            FROM APP_USER.REC_RECONCILIATION_RESULT
 
 
             WHERE RUN_ID = :runId
@@ -106,44 +81,22 @@ const getResultsByRun = async (runId) => {
 
             `,
 
+    {
+      runId,
+    },
 
-            {
-                runId
-            },
+    {
+      outFormat: require("oracledb").OUT_FORMAT_OBJECT,
+    },
+  );
 
+  await connection.close();
 
-            {
-
-                outFormat:
-                    require("oracledb")
-                        .OUT_FORMAT_OBJECT
-
-            }
-
-
-        );
-
-
-
-    await connection.close();
-
-
-
-    return result.rows;
-
-
+  return result.rows;
 };
 
-
-
-
-
-
-
 module.exports = {
+  saveResult,
 
-    saveResult,
-
-    getResultsByRun
-
+  getResultsByRun,
 };
