@@ -27,7 +27,7 @@ const Dashboard = () => {
       const response = await api.get('/dashboard/status');
 
       setDashboard(response.data);
-
+      console.log(response.data);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Dashboard loading error:', error);

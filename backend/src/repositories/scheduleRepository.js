@@ -80,7 +80,7 @@ const getSchedule = async () => {
             DAYS_OF_WEEK,
             TIMEZONE,
             STATUS
-        FROM TESTUSER.RECONCILIATION_SCHEDULE
+        FROM APP_USER.REC_RECONCILIATION_SCHEDULE
         FETCH FIRST 1 ROWS ONLY
         `,
     [],
@@ -100,7 +100,7 @@ const saveSchedule = async (schedule) => {
   const existing = await connection.execute(
     `
         SELECT SCHEDULE_ID
-        FROM TESTUSER.RECONCILIATION_SCHEDULE
+        FROM APP_USER.REC_RECONCILIATION_SCHEDULE
         FETCH FIRST 1 ROWS ONLY
         `,
     [],
@@ -112,7 +112,7 @@ const saveSchedule = async (schedule) => {
   if (existing.rows.length === 0) {
     await connection.execute(
       `
-            INSERT INTO TESTUSER.RECONCILIATION_SCHEDULE
+            INSERT INTO APP_USER.REC_RECONCILIATION_SCHEDULE
             (
                 SCHEDULE_NAME,
                 RUN_TYPE,
@@ -148,7 +148,7 @@ const saveSchedule = async (schedule) => {
   } else {
     await connection.execute(
       `
-            UPDATE TESTUSER.RECONCILIATION_SCHEDULE
+            UPDATE APP_USER.REC_RECONCILIATION_SCHEDULE
             SET
                 SCHEDULE_NAME = :scheduleName,
                 RUN_TYPE = :runType,

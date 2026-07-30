@@ -79,7 +79,6 @@
 
 //     UPDATED_DATE = CURRENT_TIMESTAMP
 
-
 // WHERE CONFIG_ID = :configId
 
 // `,
@@ -108,13 +107,9 @@
 //   updateNotificationConfig,
 // };
 
-const connectOracle =
-  require("../config/oracle");
+const connectOracle = require("../config/oracle");
 
-const oracledb =
-  require("oracledb");
-
-
+const oracledb = require("oracledb");
 
 /*
 ================================================
@@ -123,19 +118,11 @@ GET NOTIFICATION HISTORY
 */
 
 const getNotificationHistory = async () => {
-
-
-  const connection =
-    await connectOracle();
-
+  const connection = await connectOracle();
 
   try {
-
-
-    const result =
-      await connection.execute(
-
-        `
+    const result = await connection.execute(
+      `
                 SELECT
 
                     NOTIFICATION_ID,
@@ -147,37 +134,23 @@ const getNotificationHistory = async () => {
                     STATUS,
                     CREATED_DATE
 
-                FROM TESTUSER.NOTIFICATION_HISTORY
+                FROM APP_USER.REC_NOTIFICATION_HISTORY
 
                 ORDER BY CREATED_DATE DESC
                 `,
 
-        [],
+      [],
 
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT
-        }
-
-      );
-
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      },
+    );
 
     return result.rows;
-
-
-  }
-
-  finally {
-
+  } finally {
     await connection.close();
-
   }
-
 };
-
-
-
-
 
 /*
 ================================================
@@ -186,19 +159,11 @@ GET ALL CONFIGURATION
 */
 
 const getNotificationConfig = async () => {
-
-
-  const connection =
-    await connectOracle();
-
+  const connection = await connectOracle();
 
   try {
-
-
-    const result =
-      await connection.execute(
-
-        `
+    const result = await connection.execute(
+      `
                 SELECT
 
                     CONFIG_ID,
@@ -208,38 +173,23 @@ const getNotificationConfig = async () => {
                     SUBJECT,
                     CREATED_DATE
 
-                FROM TESTUSER.NOTIFICATION_CONFIG
+                FROM APP_USER.REC_NOTIFICATION_CONFIG
 
                 ORDER BY CONFIG_ID
                 `,
 
-        [],
+      [],
 
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT
-        }
-
-      );
-
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      },
+    );
 
     return result.rows;
-
-
-  }
-
-  finally {
-
+  } finally {
     await connection.close();
-
   }
-
 };
-
-
-
-
-
 
 /*
 ================================================
@@ -253,19 +203,11 @@ RECONCILIATION_FAILURE
 */
 
 const getConfigByEvent = async (eventType) => {
-
-
-  const connection =
-    await connectOracle();
-
+  const connection = await connectOracle();
 
   try {
-
-
-    const result =
-      await connection.execute(
-
-        `
+    const result = await connection.execute(
+      `
                 SELECT
 
                     CONFIG_ID,
@@ -274,41 +216,26 @@ const getConfigByEvent = async (eventType) => {
                     EMAIL_TO,
                     SUBJECT
 
-                FROM TESTUSER.NOTIFICATION_CONFIG
+                FROM APP_USER.REC_NOTIFICATION_CONFIG
 
                 WHERE EVENT_TYPE = :eventType
 
                 `,
 
-        {
-          eventType
-        },
+      {
+        eventType,
+      },
 
-        {
-          outFormat:
-            oracledb.OUT_FORMAT_OBJECT
-        }
-
-      );
-
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      },
+    );
 
     return result.rows[0];
-
-
-  }
-
-  finally {
-
+  } finally {
     await connection.close();
-
   }
-
 };
-
-
-
-
-
 
 /*
 ================================================
@@ -320,20 +247,12 @@ Admin Notification Management Page
 */
 
 const updateNotificationConfig = async (data) => {
-
-
-  const connection =
-    await connectOracle();
-
+  const connection = await connectOracle();
 
   try {
-
-
-    const result =
-      await connection.execute(
-
-        `
-                UPDATE TESTUSER.NOTIFICATION_CONFIG
+    const result = await connection.execute(
+      `
+                UPDATE APP_USER.REC_NOTIFICATION_CONFIG
 
                 SET
 
@@ -347,58 +266,30 @@ const updateNotificationConfig = async (data) => {
 
                 `,
 
-        {
+      {
+        emailEnabled: data.emailEnabled,
 
-          emailEnabled:
-            data.emailEnabled,
+        emailTo: data.emailTo,
 
-          emailTo:
-            data.emailTo,
+        subject: data.subject,
 
-          subject:
-            data.subject,
+        configId: data.configId,
+      },
 
-          configId:
-            data.configId
-
-        },
-
-        {
-          autoCommit: true
-        }
-
-      );
-
-
-    console.log(
-      "Rows updated:",
-      result.rowsAffected
+      {
+        autoCommit: true,
+      },
     );
 
+    console.log("Rows updated:", result.rowsAffected);
 
     return {
-
-      updated:
-        result.rowsAffected
-
+      updated: result.rowsAffected,
     };
-
-
-  }
-
-  finally {
-
+  } finally {
     await connection.close();
-
   }
-
 };
-
-
-
-
-
-
 
 /*
 ================================================
@@ -408,19 +299,12 @@ SAVE NOTIFICATION HISTORY
 */
 
 const saveHistory = async (data) => {
-
-
-  const connection =
-    await connectOracle();
-
+  const connection = await connectOracle();
 
   try {
-
-
     await connection.execute(
-
       `
-            INSERT INTO TESTUSER.NOTIFICATION_HISTORY
+            INSERT INTO APP_USER.REC_NOTIFICATION_HISTORY
             (
 
                 RUN_ID,
@@ -458,76 +342,36 @@ const saveHistory = async (data) => {
             `,
 
       {
+        runId: data.runId,
 
+        notificationType: data.notificationType,
 
-        runId:
-          data.runId,
+        recipient: data.recipient,
 
+        subject: data.subject,
 
-        notificationType:
-          data.notificationType,
+        message: data.message,
 
-
-        recipient:
-          data.recipient,
-
-
-        subject:
-          data.subject,
-
-
-        message:
-          data.message,
-
-
-        status:
-          data.status
-
-
+        status: data.status,
       },
 
-
       {
-
-        autoCommit: true
-
-      }
-
+        autoCommit: true,
+      },
     );
-
-
-  }
-
-  finally {
-
+  } finally {
     await connection.close();
-
   }
-
 };
 
-
-
-
-
-
-
 module.exports = {
-
-
   getNotificationHistory,
-
 
   getNotificationConfig,
 
-
   getConfigByEvent,
-
 
   updateNotificationConfig,
 
-
-  saveHistory
-
-
+  saveHistory,
 };

@@ -76,6 +76,8 @@ const getSchedule = async (req, res) => {
 
 const saveSchedule = async (req, res) => {
   try {
+    const data = req.body;
+    console.log(data);
     const result = await schedulerService.saveSchedule(req.body);
 
     res.json(result);

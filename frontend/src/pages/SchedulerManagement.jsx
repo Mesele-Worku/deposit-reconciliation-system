@@ -44,13 +44,21 @@ const SchedulerManagement = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-
+      console.log('SENDING SCHEDULE:', {
+        SCHEDULE_ID: schedule.SCHEDULE_ID,
+        SCHEDULE_NAME: schedule.SCHEDULE_NAME,
+        RUN_TYPE: 'SCHEDULED',
+        RUN_TIME: schedule.RUN_TIME,
+        DAYS_OF_WEEK: schedule.DAYS_OF_WEEK,
+        TIMEZONE: schedule.TIMEZONE,
+        STATUS: schedule.STATUS,
+      });
       await schedulerApi.saveSchedule({
         SCHEDULE_ID: schedule.SCHEDULE_ID,
 
         SCHEDULE_NAME: schedule.SCHEDULE_NAME,
 
-        RUN_TYPE: schedule.RUN_TYPE,
+        RUN_TYPE: 'SCHEDULED',
 
         RUN_TIME: schedule.RUN_TIME,
 

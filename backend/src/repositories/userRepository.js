@@ -17,7 +17,7 @@ ROLE,
 STATUS,
 CREATED_DATE
 
-FROM TESTUSER.EDRMS_USERS
+FROM APP_USER.REC_EDRMS_USERS
 
 WHERE LOWER(USERNAME) LIKE LOWER(:search)
 OR LOWER(FULL_NAME) LIKE LOWER(:search)
@@ -47,7 +47,7 @@ const getUserById = async (id) => {
     `
 SELECT *
 
-FROM TESTUSER.EDRMS_USERS
+FROM APP_USER.REC_EDRMS_USERS
 
 WHERE USER_ID=:id
 
@@ -79,7 +79,7 @@ ROLE,
 STATUS,
 CREATED_DATE
 
-FROM TESTUSER.EDRMS_USERS
+FROM APP_USER.REC_EDRMS_USERS
 
 WHERE USERNAME=:username
 `,
@@ -105,7 +105,7 @@ const createUser = async (user) => {
 
   await connection.execute(
     `
-INSERT INTO TESTUSER.EDRMS_USERS
+INSERT INTO APP_USER.REC_EDRMS_USERS
 (
 USERNAME,
 PASSWORD_HASH,
@@ -140,7 +140,7 @@ const updateUser = async (id, data) => {
 
   await connection.execute(
     `
-UPDATE TESTUSER.EDRMS_USERS
+UPDATE APP_USER.REC_EDRMS_USERS
 
 SET
 
@@ -172,7 +172,7 @@ const updateStatus = async (id, status) => {
 
   await connection.execute(
     `
-UPDATE TESTUSER.EDRMS_USERS
+UPDATE APP_USER.REC_EDRMS_USERS
 
 SET STATUS=:status
 
@@ -198,7 +198,7 @@ const resetPassword = async (id, passwordHash) => {
 
   await connection.execute(
     `
-UPDATE TESTUSER.EDRMS_USERS
+UPDATE APP_USER.REC_EDRMS_USERS
 
 SET PASSWORD_HASH=:passwordHash
 
@@ -225,7 +225,7 @@ const getActiveAdmins = async () => {
 SELECT
 USER_ID
 
-FROM TESTUSER.EDRMS_USERS
+FROM APP_USER.REC_EDRMS_USERS
 
 WHERE ROLE='ADMIN'
 
