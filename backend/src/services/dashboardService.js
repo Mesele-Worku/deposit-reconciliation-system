@@ -1,14 +1,18 @@
+
+
 // const dashboardRepository = require("../repositories/dashboardRepository");
 
 // const resultRepository = require("../repositories/resultRepository");
 
-// const coreRepository = require("../repositories/coreBankingRepository");
+// const coreDepositRepository = require("../repositories/coreDepositRepository");
 
 // const warehouseRepository = require("../repositories/warehouseRepository");
 
 // const getDashboard = async () => {
 //   /*
-//         1. Monitoring Information
+//     ============================================
+//     1. MONITORING INFORMATION
+//     ============================================
 //     */
 
 //   const latestRun = await dashboardRepository.getLatestRun();
@@ -20,37 +24,68 @@
 //   const recentJobs = await dashboardRepository.getRecentJobs();
 
 //   /*
-//         2. Deposit Information
+//     ============================================
+//     2. CORE DEPOSIT
+
+//     IMPORTANT:
+//     READ FROM ORACLE CACHE.
+
+//     NEVER EXECUTE DB2 HERE.
+//     ============================================
 //     */
 
-//   const core = await coreRepository.getDepositSummary();
+//   const core = await coreDepositRepository.getLatestDeposit();
+
+//   /*
+//     ============================================
+//     3. WAREHOUSE DEPOSIT
+
+//     Warehouse is already stored/loaded in Oracle,
+//     so this is safe for dashboard.
+//     ============================================
+//     */
 
 //   const warehouse = await warehouseRepository.getDepositSummary();
 
 //   /*
-//         3. Reconciliation Rules
+//     ============================================
+//     4. RECONCILIATION RULES
+//     ============================================
 //     */
 
 //   let rules = [];
 
 //   if (latestRun) {
 //     const results = await resultRepository.getResultsByRun(latestRun.RUN_ID);
-//     console.log(results);
 
 //     rules = results.map((rule) => ({
 //       name: rule.NAME || rule.name,
 
 //       status: rule.STATUS || rule.status,
 
-//       difference: rule.DIFFERENCE || rule.difference || 0,
+//       difference: rule.DIFFERENCE ?? rule.difference ?? 0,
 
-//       expected: rule.EXPECTED_VALUE || rule.expected,
+//       expected: rule.EXPECTED_VALUE ?? rule.expected,
 
-//       actual: rule.ACTUAL_VALUE || rule.actual,
+//       actual: rule.ACTUAL_VALUE ?? rule.actual,
 
 //       message: rule.MESSAGE || rule.message,
 //     }));
 //   }
+
+//   /*
+//     ============================================
+//     5. CORE AMOUNT
+//     ============================================
+//     */
+
+//   const coreDeposit = core ? Number(core.DEPOSIT_AMOUNT || 0) : 0;
+
+//   /*
+//     ============================================
+//     6. RESPONSE
+//     ============================================
+//     */
 
 //   return {
 //     systemStatus: "ACTIVE",
@@ -60,28 +95,54 @@
 //     scheduler,
 
 //     jobs: {
-//       total: jobStatistics?.TOTAL_JOBS || 0,
+//       total: Number(jobStatistics?.TOTAL_JOBS || 0),
 
-//       successful: jobStatistics?.SUCCESS_JOBS || 0,
+//       successful: Number(jobStatistics?.SUCCESS_JOBS || 0),
 
-//       failed: jobStatistics?.FAILED_JOBS || 0,
+//       failed: Number(jobStatistics?.FAILED_JOBS || 0),
+
+//       running: Number(jobStatistics?.RUNNING_JOBS || 0),
 //     },
 
 //     latestRun,
 
 //     recentJobs,
 
+//     /*
+//         ============================================
+//         DEPOSITS
+//         ============================================
+//         */
+
 //     deposits: {
-//       core: core.totalDeposit,
+//       core: coreDeposit,
 
-//       warehouse: warehouse.totalDeposit,
+//       warehouse: Number(warehouse?.totalDeposit || 0),
 
-//       retail: warehouse.retailDeposit,
+//       retail: Number(warehouse?.retailDeposit || 0),
 
-//       segmentation: warehouse.segmentationDeposit,
+//       segmentation: Number(warehouse?.segmentationDeposit || 0),
+
+//       coreSnapshot: core
+//         ? {
+//             businessDate: core.BUSINESS_DATE,
+
+//             insertedDate: core.CREATED_DATE,
+
+//             status: core.STATUS,
+
+//             durationSeconds: core.QUERY_DURATION_SECONDS,
+//           }
+//         : null,
 //     },
 
-//     segments: warehouse.segments,
+//     segments: warehouse?.segments || {},
+
+//     /*
+//         ============================================
+//         RECONCILIATION RULES
+//         ============================================
+//         */
 
 //     rules: {
 //       rule1: rules[0] || {
@@ -107,6 +168,7 @@
 
 //         difference: 0,
 //       },
+
 //       summary: {
 //         total: rules.length,
 
@@ -122,94 +184,129 @@
 //   getDashboard,
 // };
 
-const dashboardRepository = require("../repositories/dashboardRepository");
 
-const resultRepository = require("../repositories/resultRepository");
+const dashboardRepository =
+  require("../repositories/dashboardRepository");
 
-const coreDepositRepository = require("../repositories/coreDepositRepository");
+const resultRepository =
+  require("../repositories/resultRepository");
 
-const warehouseRepository = require("../repositories/warehouseRepository");
+const coreDepositRepository =
+  require("../repositories/coreDepositRepository");
+
+const warehouseRepository =
+  require("../repositories/warehouseRepository");
 
 const getDashboard = async () => {
-  /*
-    ============================================
-    1. MONITORING INFORMATION
-    ============================================
-    */
-
-  const latestRun = await dashboardRepository.getLatestRun();
-
-  const scheduler = await dashboardRepository.getScheduler();
-
-  const jobStatistics = await dashboardRepository.getJobStatistics();
-
-  const recentJobs = await dashboardRepository.getRecentJobs();
 
   /*
-    ============================================
-    2. CORE DEPOSIT
+  ============================================
+  1. MONITORING INFORMATION
+  ============================================
+  */
 
-    IMPORTANT:
-    READ FROM ORACLE CACHE.
+  const latestRun =
+    await dashboardRepository.getLatestRun();
 
-    NEVER EXECUTE DB2 HERE.
-    ============================================
-    */
+  const scheduler =
+    await dashboardRepository.getScheduler();
 
-  const core = await coreDepositRepository.getLatestDeposit();
+  const jobStatistics =
+    await dashboardRepository.getJobStatistics();
 
-  /*
-    ============================================
-    3. WAREHOUSE DEPOSIT
+  const recentJobs =
+    await dashboardRepository.getRecentJobs();
 
-    Warehouse is already stored/loaded in Oracle,
-    so this is safe for dashboard.
-    ============================================
-    */
-
-  const warehouse = await warehouseRepository.getDepositSummary();
 
   /*
-    ============================================
-    4. RECONCILIATION RULES
-    ============================================
-    */
+  ============================================
+  2. CORE DEPOSIT
+  ============================================
+
+  Read from Oracle cache.
+
+  NEVER execute DB2 here.
+  ============================================
+  */
+
+  const core =
+    await coreDepositRepository.getLatestDeposit();
+
+
+  /*
+  ============================================
+  3. WAREHOUSE DEPOSIT
+  ============================================
+  */
+
+  const warehouse =
+    await warehouseRepository.getDepositSummary();
+
+
+  /*
+  ============================================
+  4. RECONCILIATION RULES
+  ============================================
+  */
 
   let rules = [];
 
   if (latestRun) {
-    const results = await resultRepository.getResultsByRun(latestRun.RUN_ID);
+
+    const results =
+      await resultRepository.getResultsByRun(
+        latestRun.RUN_ID
+      );
 
     rules = results.map((rule) => ({
-      name: rule.NAME || rule.name,
+      name:
+        rule.NAME ||
+        rule.name,
 
-      status: rule.STATUS || rule.status,
+      status:
+        rule.STATUS ||
+        rule.status,
 
-      difference: rule.DIFFERENCE ?? rule.difference ?? 0,
+      difference:
+        rule.DIFFERENCE ??
+        rule.difference ??
+        0,
 
-      expected: rule.EXPECTED_VALUE ?? rule.expected,
+      expected:
+        rule.EXPECTED_VALUE ??
+        rule.expected,
 
-      actual: rule.ACTUAL_VALUE ?? rule.actual,
+      actual:
+        rule.ACTUAL_VALUE ??
+        rule.actual,
 
-      message: rule.MESSAGE || rule.message,
+      message:
+        rule.MESSAGE ||
+        rule.message,
     }));
   }
 
-  /*
-    ============================================
-    5. CORE AMOUNT
-    ============================================
-    */
-
-  const coreDeposit = core ? Number(core.DEPOSIT_AMOUNT || 0) : 0;
 
   /*
-    ============================================
-    6. RESPONSE
-    ============================================
-    */
+  ============================================
+  5. CORE AMOUNT
+  ============================================
+  */
+
+  const coreDeposit =
+    core
+      ? Number(core.DEPOSIT_AMOUNT || 0)
+      : 0;
+
+
+  /*
+  ============================================
+  6. RESPONSE
+  ============================================
+  */
 
   return {
+
     systemStatus: "ACTIVE",
 
     timestamp: new Date(),
@@ -217,86 +314,145 @@ const getDashboard = async () => {
     scheduler,
 
     jobs: {
-      total: Number(jobStatistics?.TOTAL_JOBS || 0),
+      total:
+        Number(
+          jobStatistics?.TOTAL_JOBS || 0
+        ),
 
-      successful: Number(jobStatistics?.SUCCESS_JOBS || 0),
+      successful:
+        Number(
+          jobStatistics?.SUCCESS_JOBS || 0
+        ),
 
-      failed: Number(jobStatistics?.FAILED_JOBS || 0),
+      failed:
+        Number(
+          jobStatistics?.FAILED_JOBS || 0
+        ),
 
-      running: Number(jobStatistics?.RUNNING_JOBS || 0),
+      running:
+        Number(
+          jobStatistics?.RUNNING_JOBS || 0
+        ),
     },
 
     latestRun,
 
     recentJobs,
 
+
     /*
-        ============================================
-        DEPOSITS
-        ============================================
-        */
+    ============================================
+    DEPOSITS
+    ============================================
+    */
 
     deposits: {
+
       core: coreDeposit,
 
-      warehouse: Number(warehouse?.totalDeposit || 0),
+      warehouse:
+        Number(
+          warehouse?.totalDeposit || 0
+        ),
 
-      retail: Number(warehouse?.retailDeposit || 0),
+      retail:
+        Number(
+          warehouse?.retailDeposit || 0
+        ),
 
-      segmentation: Number(warehouse?.segmentationDeposit || 0),
+      segmentation:
+        Number(
+          warehouse?.segmentationDeposit || 0
+        ),
 
       coreSnapshot: core
         ? {
-            businessDate: core.BUSINESS_DATE,
+          businessDate:
+            core.BUSINESS_DATE,
 
-            insertedDate: core.CREATED_DATE,
+          insertedDate:
+            core.CREATED_DATE,
 
-            status: core.STATUS,
+          status:
+            core.STATUS,
 
-            durationSeconds: core.QUERY_DURATION_SECONDS,
-          }
+          durationSeconds:
+            core.QUERY_DURATION_SECONDS,
+        }
         : null,
     },
 
-    segments: warehouse?.segments || {},
+
+    segments:
+      warehouse?.segments || {},
+
 
     /*
-        ============================================
-        RECONCILIATION RULES
-        ============================================
-        */
+    ============================================
+    RECONCILIATION RULES
+    ============================================
+    */
 
     rules: {
-      rule1: rules[0] || {
-        name: "CORE VS WAREHOUSE TOTAL DEPOSIT",
 
-        status: "PENDING",
+      rule1:
+        rules.find(
+          (r) =>
+            r.name ===
+            "CORE VS WAREHOUSE TOTAL DEPOSIT"
+        ) || {
+          name:
+            "CORE VS WAREHOUSE TOTAL DEPOSIT",
 
-        difference: 0,
-      },
+          status: "PENDING",
 
-      rule2: rules[1] || {
-        name: "Retail + Segmentation Validation",
+          difference: 0,
+        },
 
-        status: "PENDING",
+      rule2:
+        rules.find(
+          (r) =>
+            r.name ===
+            "Retail + Segmentation Validation"
+        ) || {
+          name:
+            "Retail + Segmentation Validation",
 
-        difference: 0,
-      },
+          status: "PENDING",
 
-      rule3: rules[2] || {
-        name: "Segment Total Validation",
+          difference: 0,
+        },
 
-        status: "PENDING",
+      rule3:
+        rules.find(
+          (r) =>
+            r.name ===
+            "Segment Total Validation"
+        ) || {
+          name:
+            "Segment Total Validation",
 
-        difference: 0,
-      },
+          status: "PENDING",
+
+          difference: 0,
+        },
 
       summary: {
-        total: rules.length,
 
-        passed: rules.filter((r) => r.status === "PASS").length,
+        total:
+          rules.length,
 
-        failed: rules.filter((r) => r.status === "FAIL").length,
+        passed:
+          rules.filter(
+            (r) =>
+              r.status === "PASS"
+          ).length,
+
+        failed:
+          rules.filter(
+            (r) =>
+              r.status === "FAIL"
+          ).length,
       },
     },
   };
