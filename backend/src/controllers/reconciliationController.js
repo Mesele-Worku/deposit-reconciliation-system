@@ -1,226 +1,321 @@
-const reconciliationService =
-    require("../services/reconciliationService");
+// const reconciliationService =
+//     require("../services/reconciliationService");
 
+// const jobRepository =
+//     require("../repositories/jobHistoryRepository");
 
-const jobRepository =
-    require("../repositories/jobHistoryRepository");
+// /*
+//     Manual reconciliation execution
 
+//     ADMIN / OPERATOR
+// */
 
+// const run = async (req, res) => {
 
+//     let jobId;
 
+//     try {
+
+//         /*
+//             1. Create Job History
+//         */
+
+//         jobId =
+//             await jobRepository.createJob(
+//                 "MANUAL"
+//             );
+
+//         /*
+//             2. Execute reconciliation
+
+//             This creates:
+//             - RECONCILIATION_RUN
+//             - RECONCILIATION_RESULT
+
+//             Returns runId
+//         */
+
+//         const result =
+//             await reconciliationService
+//                 .runReconciliation();
+
+//         /*
+//             3. Link Job with Run
+
+//             JOB_HISTORY.RUN_ID = RUN_ID
+//         */
+
+//         await jobRepository.updateJobRunId(
+
+//             jobId,
+
+//             result.runId
+
+//         );
+//         /*
+//             4. Complete Job
+//         */
+
+//         await jobRepository.completeJob(
+
+//             jobId,
+
+//             "SUCCESS"
+
+//         );
+//         res.status(200).json({
+
+//             message:
+//                 "Reconciliation completed successfully",
+
+//             jobId,
+
+//             data:
+//                 result
+
+//         });
+
+//     }
+
+//     catch (error) {
+
+//         console.error(
+//             "Manual reconciliation failed:",
+//             error.message
+//         );
+
+//         if (jobId) {
+
+//             await jobRepository.completeJob(
+
+//                 jobId,
+
+//                 "FAILED",
+
+//                 error.message
+
+//             );
+
+//         }
+//         res.status(500).json({
+
+//             message:
+//                 "Reconciliation failed",
+
+//             error:
+//                 error.message
+
+//         });
+
+//     }
+
+// };
+
+// /*
+//     Dashboard status API
+
+//     Viewer/Admin/Operator
+
+// */
+
+// const getStatus = async (req, res) => {
+
+//     try {
+
+//         const latestJobs =
+//             await jobRepository.getLatestJobs();
+
+//         const latestJob =
+//             latestJobs[0];
+
+//         res.json({
+
+//             schedulerStatus:
+//                 "ACTIVE",
+
+//             lastExecution:
+//                 latestJob || null,
+
+//             message:
+//                 "EDRMS monitoring active"
+
+//         });
+
+//     }
+
+//     catch (error) {
+
+//         res.status(500)
+//             .json({
+
+//                 message:
+//                     error.message
+
+//             });
+
+//     }
+
+// };
+
+// module.exports = {
+
+//     run,
+
+//     getStatus
+
+// };
+
+const reconciliationService = require("../services/reconciliationService");
+const jobRepository = require("../repositories/jobHistoryRepository");
 
 /*
-    Manual reconciliation execution
-
-    ADMIN / OPERATOR
+=========================================================
+MANUAL RECONCILIATION EXECUTION
+ADMIN / OPERATOR
+=========================================================
 */
-
 const run = async (req, res) => {
+  let jobId = null;
 
-
-    let jobId;
-
-
-
-    try {
-
-
-
-        /*
-            1. Create Job History
+  try {
+    /*
+        =================================================
+        1. CREATE JOB HISTORY
+        =================================================
         */
 
-        jobId =
-            await jobRepository.createJob(
-                "MANUAL"
-            );
+    jobId = await jobRepository.createJob("MANUAL");
 
+    console.log("Manual reconciliation job created:", jobId);
 
+    /*
+        =================================================
+        2. EXECUTE RECONCILIATION
+        =================================================
 
+        runReconciliation():
 
+        - Creates REC_RECONCILIATION_RUN
+        - Executes expensive DB2 query
+        - Stores CORE result in REC_DEPOSIT_CORE
+        - Loads warehouse data
+        - Performs reconciliation
+        - Stores reconciliation results
+        - Updates reconciliation run status
+        - Sends notification
 
-
-        /*
-            2. Execute reconciliation
-
-            This creates:
-            - RECONCILIATION_RUN
-            - RECONCILIATION_RESULT
-
-            Returns runId
+        It returns:
+            {
+                runId,
+                ...
+            }
         */
 
-        const result =
-            await reconciliationService
-                .runReconciliation();
+    const result = await reconciliationService.runReconciliation({
+      createdBy: req.user?.username || "SYSTEM",
+    });
 
-        /*
-            3. Link Job with Run
-
-            JOB_HISTORY.RUN_ID = RUN_ID
+    /*
+        =================================================
+        3. LINK JOB TO RECONCILIATION RUN
+        =================================================
         */
 
+    await jobRepository.updateJobRunId(jobId, result.runId);
 
-        await jobRepository.updateJobRunId(
-
-            jobId,
-
-            result.runId
-
-        );
-        /*
-            4. Complete Job
+    /*
+        =================================================
+        4. MARK JOB AS SUCCESS
+        =================================================
         */
 
+    await jobRepository.completeJob(jobId, "SUCCESS");
 
-        await jobRepository.completeJob(
+    /*
+        =================================================
+        5. RETURN RESPONSE
+        =================================================
+        */
 
-            jobId,
+    return res.status(200).json({
+      message: "Reconciliation completed successfully",
 
-            "SUCCESS"
+      jobId,
 
-        );
-        res.status(200).json({
+      runId: result.runId,
 
+      data: result,
+    });
+  } catch (error) {
+    /*
+        =================================================
+        RECONCILIATION FAILED
+        =================================================
+        */
 
-            message:
-                "Reconciliation completed successfully",
+    console.error("Manual reconciliation failed:", error);
 
+    /*
+        =================================================
+        MARK JOB AS FAILED
+        =================================================
+        */
 
-            jobId,
-
-
-            data:
-                result
-
-
-        });
-
+    if (jobId) {
+      try {
+        await jobRepository.completeJob(jobId, "FAILED", error.message);
+      } catch (jobError) {
+        console.error("Failed to update job history:", jobError.message);
+      }
     }
 
-    catch (error) {
+    /*
+        =================================================
+        RETURN ERROR
+        =================================================
+        */
 
+    return res.status(500).json({
+      message: "Reconciliation failed",
 
+      jobId,
 
-        console.error(
-            "Manual reconciliation failed:",
-            error.message
-        );
-
-        if (jobId) {
-
-
-            await jobRepository.completeJob(
-
-                jobId,
-
-                "FAILED",
-
-                error.message
-
-            );
-
-
-        }
-        res.status(500).json({
-
-            message:
-                "Reconciliation failed",
-
-            error:
-                error.message
-
-        });
-
-
-
-    }
-
-
+      error: error.message,
+    });
+  }
 };
-
 
 /*
-    Dashboard status API
-
-    Viewer/Admin/Operator
-
+=========================================================
+DASHBOARD / MONITORING STATUS
+VIEWER / ADMIN / OPERATOR
+=========================================================
 */
-
 const getStatus = async (req, res) => {
+  try {
+    const latestJobs = await jobRepository.getLatestJobs();
 
+    const latestJob = latestJobs.length > 0 ? latestJobs[0] : null;
 
-    try {
+    return res.status(200).json({
+      schedulerStatus: "ACTIVE",
 
+      lastExecution: latestJob,
 
+      message: "EDRMS monitoring active",
+    });
+  } catch (error) {
+    console.error("Get reconciliation status failed:", error.message);
 
-        const latestJobs =
-            await jobRepository.getLatestJobs();
+    return res.status(500).json({
+      message: "Failed to get reconciliation status",
 
-
-
-        const latestJob =
-            latestJobs[0];
-
-
-
-
-
-
-        res.json({
-
-
-            schedulerStatus:
-                "ACTIVE",
-
-
-
-            lastExecution:
-                latestJob || null,
-
-
-
-            message:
-                "EDRMS monitoring active"
-
-
-
-        });
-
-
-
-
-    }
-
-    catch (error) {
-
-
-        res.status(500)
-            .json({
-
-                message:
-                    error.message
-
-            });
-
-
-    }
-
-
+      error: error.message,
+    });
+  }
 };
-
-
-
-
-
-
 
 module.exports = {
-
-
-    run,
-
-    getStatus
-
-
+  run,
+  getStatus,
 };

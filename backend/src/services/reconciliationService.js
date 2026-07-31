@@ -9,35 +9,32 @@
 // const notificationService = require("./notificationService");
 
 // const runReconciliation = async () => {
-//   const runId = await reconciliationRepository.createRun(
-//     new Date().toISOString().substring(0, 10),
-//   );
+//   const businessDate = new Date().toISOString().substring(0, 10);
+
+//   const runId = await reconciliationRepository.createRun(businessDate);
 
 //   try {
 //     /*
-//         1. Get Core Banking Data
+//     ===============================
+//     GET SOURCE DATA
+//     ===============================
 //     */
-
+//     // Load latest DWH data
+//     await warehouseRepository.loadDepositSummary(businessDate);
 //     const core = await coreRepository.getDepositSummary();
 
 //     console.log("CORE DATA:");
 //     console.log(core);
-
-//     /*
-//         2. Get Warehouse Data
-//     */
-
+//     console.log(core.totalDeposit);
 //     const warehouse = await warehouseRepository.getDepositSummary();
 
 //     console.log("WAREHOUSE DATA:");
 //     console.log(warehouse);
 
 //     /*
-//         RULE 1
-
-//         Core Deposit
-//         VS
-//         Warehouse Deposit
+//     ===============================
+//     RULE 1
+//     ===============================
 //     */
 
 //     const rule1Difference = core.totalDeposit - warehouse.totalDeposit;
@@ -61,11 +58,9 @@
 //     });
 
 //     /*
-//         RULE 2
-
-//         Retail + Segmentation
-//         Validation
-
+//     ===============================
+//     RULE 2
+//     ===============================
 //     */
 
 //     const calculatedTotal =
@@ -94,10 +89,9 @@
 //     });
 
 //     /*
-//         RULE 3
-
-//         Segment Validation
-
+//     ===============================
+//     RULE 3
+//     ===============================
 //     */
 
 //     const segments = warehouse.segments || {};
@@ -107,7 +101,8 @@
 //       0,
 //     );
 
-//     const rule3Difference = segmentTotal - warehouse.segmentationDeposit;
+//     const rule3Difference =
+//       Math.round(segmentTotal) - Math.round(warehouse.segmentationDeposit);
 
 //     const rule3 = rule3Difference === 0;
 
@@ -118,9 +113,9 @@
 
 //       status: rule3 ? "PASS" : "FAIL",
 
-//       expected: warehouse.segmentationDeposit,
+//       expected: Math.round(warehouse.segmentationDeposit),
 
-//       actual: segmentTotal,
+//       actual: Math.round(segmentTotal),
 
 //       difference: rule3Difference,
 
@@ -128,23 +123,77 @@
 //     });
 
 //     /*
-//         COMPLETE RUN
+//     ===============================
+//     UPDATE RUN STATUS
+//     ===============================
 //     */
 
 //     await reconciliationRepository.updateRunStatus(runId, "COMPLETED");
 
 //     /*
-//         SEND SUCCESS NOTIFICATION
-
+//     ===============================
+//     CHECK FAILED RULES
+//     ===============================
 //     */
 
-//     await notificationService.reconciliationSuccess({
-//       RUN_ID: runId,
+//     const failedRules = [];
 
-//       CORE_DEPOSIT: core.totalDeposit,
+//     if (!rule1) {
+//       failedRules.push({
+//         name: "Core Vs Warehouse Deposit",
+//         difference: rule1Difference,
+//       });
+//     }
 
-//       WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
-//     });
+//     if (!rule2) {
+//       failedRules.push({
+//         name: "Retail + Segmentation Validation",
+//         difference: rule2Difference,
+//       });
+//     }
+
+//     if (!rule3) {
+//       failedRules.push({
+//         name: "Segment Total Validation",
+//         difference: rule3Difference,
+//       });
+//     }
+
+//     /*
+//     ===============================
+//     SEND EMAIL
+//     ===============================
+//     */
+
+//     if (failedRules.length === 0) {
+//       await notificationService.reconciliationSuccess({
+//         RUN_ID: runId,
+
+//         BUSINESS_DATE: businessDate,
+
+//         CORE_DEPOSIT: core.totalDeposit,
+
+//         WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
+//       });
+//     } else {
+//       await notificationService.reconciliationFailure({
+//         RUN_ID: runId,
+
+//         BUSINESS_DATE: businessDate,
+
+//         CORE_DEPOSIT: core.totalDeposit,
+
+//         WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
+
+//         FAILED_RULES: failedRules,
+//       });
+//     }
+
+//     /*
+//     ===============================
+//     RETURN RESULT
+//     ===============================
+//     */
 
 //     return {
 //       runId,
@@ -188,17 +237,14 @@
 //       },
 //     };
 //   } catch (error) {
-//     console.error("Reconciliation failed:", error);
+//     console.error(error);
 
 //     await reconciliationRepository.updateRunStatus(runId, "FAILED");
 
-//     /*
-//         SEND FAILURE NOTIFICATION
-
-//     */
-
 //     await notificationService.reconciliationFailure({
 //       RUN_ID: runId,
+
+//       BUSINESS_DATE: businessDate,
 
 //       ERROR: error.message,
 //     });
@@ -213,6 +259,8 @@
 
 const coreRepository = require("../repositories/coreBankingRepository");
 
+const coreDepositRepository = require("../repositories/coreDepositRepository");
+
 const warehouseRepository = require("../repositories/warehouseRepository");
 
 const reconciliationRepository = require("../repositories/reconciliationRepository");
@@ -221,38 +269,161 @@ const resultRepository = require("../repositories/resultRepository");
 
 const notificationService = require("./notificationService");
 
-const runReconciliation = async () => {
+/*
+=========================================================
+RUN RECONCILIATION
+=========================================================
+
+This function:
+
+1. Creates reconciliation RUN
+2. Executes expensive DB2 query
+3. Saves Core Banking result into Oracle
+4. Loads Warehouse data
+5. Performs reconciliation rules
+6. Saves reconciliation results
+7. Updates RUN status
+8. Sends notification
+9. Returns reconciliation result
+
+IMPORTANT:
+The expensive DB2 query is executed ONLY here.
+
+The dashboard does NOT execute DB2.
+=========================================================
+*/
+
+const runReconciliation = async ({ createdBy = "SYSTEM" } = {}) => {
+  /*
+    =====================================================
+    BUSINESS DATE
+    =====================================================
+    */
+
   const businessDate = new Date().toISOString().substring(0, 10);
+
+  /*
+    =====================================================
+    CREATE RECONCILIATION RUN
+    =====================================================
+    */
 
   const runId = await reconciliationRepository.createRun(businessDate);
 
+  console.log("Reconciliation Run Created:", runId);
+
   try {
     /*
-    ===============================
-    GET SOURCE DATA
-    ===============================
-    */
-    // Load latest DWH data
-    await warehouseRepository.loadDepositSummary(businessDate);
-    const core = await coreRepository.getDepositSummary();
+        =================================================
+        STEP 1
+        GET CORE BANKING DATA FROM DB2
+        =================================================
 
-    console.log("CORE DATA:");
-    console.log(core);
-    console.log(core.totalDeposit);
-    const warehouse = await warehouseRepository.getDepositSummary();
+        IMPORTANT:
 
-    console.log("WAREHOUSE DATA:");
-    console.log(warehouse);
+        This is the ONLY place where the expensive
+        DB2 query is executed.
+
+        Dashboard will NEVER call this function.
+        */
+
+    console.log("========================================");
+
+    console.log("Starting Core Banking data extraction...");
+
+    console.log("Run ID:", runId);
+
+    console.log("Business Date:", businessDate);
+
+    console.log("========================================");
+
+    const core = await coreRepository.getDepositSummaryFromCore();
+
+    console.log("Core deposit:", core.totalDeposit);
 
     /*
-    ===============================
-    RULE 1
-    ===============================
-    */
+        =================================================
+        STEP 2
+        SAVE CORE RESULT INTO ORACLE
+        =================================================
 
-    const rule1Difference = core.totalDeposit - warehouse.totalDeposit;
+        IMPORTANT:
 
-    const rule1 = rule1Difference === 0;
+        runId is now passed here.
+
+        This creates the relationship:
+
+        REC_RECONCILIATION_RUN
+                    |
+                    | RUN_ID
+                    ↓
+        REC_DEPOSIT_CORE
+        */
+
+    await coreDepositRepository.saveDeposit({
+      runId,
+
+      businessDate,
+
+      amount: core.totalDeposit,
+
+      queryStartTime: core.queryStartTime,
+
+      queryEndTime: core.queryEndTime,
+
+      durationSeconds: core.durationSeconds,
+
+      createdBy,
+    });
+
+    console.log("Core deposit snapshot saved successfully.");
+
+    /*
+        =================================================
+        STEP 3
+        LOAD WAREHOUSE DATA
+        =================================================
+
+        The warehouse repository loads the latest
+        warehouse deposit information into Oracle.
+        */
+
+    console.log("Loading Warehouse deposit data...");
+
+    await warehouseRepository.loadDepositSummary(businessDate);
+
+    /*
+        =================================================
+        GET WAREHOUSE DATA
+        =================================================
+        */
+
+    const warehouse = await warehouseRepository.getDepositSummary();
+
+    console.log("Warehouse data:", warehouse);
+
+    /*
+        =================================================
+        STEP 4
+        RULE 1
+        CORE VS WAREHOUSE TOTAL DEPOSIT
+        =================================================
+        */
+
+    const coreAmount = Number(core.totalDeposit || 0);
+
+    const warehouseAmount = Number(warehouse.totalDeposit || 0);
+
+    const rule1Difference = coreAmount - warehouseAmount;
+
+    /*
+        Use a tolerance for monetary comparison.
+
+        Difference smaller than 0.01 ETB
+        is considered matched.
+        */
+
+    const rule1 = Math.abs(rule1Difference) < 0.01;
 
     await resultRepository.saveResult({
       runId,
@@ -261,9 +432,9 @@ const runReconciliation = async () => {
 
       status: rule1 ? "PASS" : "FAIL",
 
-      expected: core.totalDeposit,
+      expected: coreAmount,
 
-      actual: warehouse.totalDeposit,
+      actual: warehouseAmount,
 
       difference: rule1Difference,
 
@@ -271,17 +442,22 @@ const runReconciliation = async () => {
     });
 
     /*
-    ===============================
-    RULE 2
-    ===============================
-    */
+        =================================================
+        STEP 5
+        RULE 2
+        RETAIL + SEGMENTATION
+        =================================================
+        */
 
-    const calculatedTotal =
-      warehouse.retailDeposit + warehouse.segmentationDeposit;
+    const retailDeposit = Number(warehouse.retailDeposit || 0);
 
-    const rule2Difference = calculatedTotal - warehouse.totalDeposit;
+    const segmentationDeposit = Number(warehouse.segmentationDeposit || 0);
 
-    const rule2 = rule2Difference === 0;
+    const calculatedTotal = retailDeposit + segmentationDeposit;
+
+    const rule2Difference = calculatedTotal - warehouseAmount;
+
+    const rule2 = Math.abs(rule2Difference) < 0.01;
 
     await resultRepository.saveResult({
       runId,
@@ -290,7 +466,7 @@ const runReconciliation = async () => {
 
       status: rule2 ? "PASS" : "FAIL",
 
-      expected: warehouse.totalDeposit,
+      expected: warehouseAmount,
 
       actual: calculatedTotal,
 
@@ -302,21 +478,23 @@ const runReconciliation = async () => {
     });
 
     /*
-    ===============================
-    RULE 3
-    ===============================
-    */
+        =================================================
+        STEP 6
+        RULE 3
+        SEGMENT TOTAL
+        =================================================
+        */
 
     const segments = warehouse.segments || {};
 
     const segmentTotal = Object.values(segments).reduce(
-      (sum, value) => sum + value,
+      (sum, value) => sum + Number(value || 0),
       0,
     );
 
-    const rule3Difference = segmentTotal - warehouse.segmentationDeposit;
+    const rule3Difference = segmentTotal - segmentationDeposit;
 
-    const rule3 = rule3Difference === 0;
+    const rule3 = Math.abs(rule3Difference) < 0.01;
 
     await resultRepository.saveResult({
       runId,
@@ -325,7 +503,7 @@ const runReconciliation = async () => {
 
       status: rule3 ? "PASS" : "FAIL",
 
-      expected: warehouse.segmentationDeposit,
+      expected: segmentationDeposit,
 
       actual: segmentTotal,
 
@@ -335,24 +513,18 @@ const runReconciliation = async () => {
     });
 
     /*
-    ===============================
-    UPDATE RUN STATUS
-    ===============================
-    */
-
-    await reconciliationRepository.updateRunStatus(runId, "COMPLETED");
-
-    /*
-    ===============================
-    CHECK FAILED RULES
-    ===============================
-    */
+        =================================================
+        STEP 7
+        COLLECT FAILED RULES
+        =================================================
+        */
 
     const failedRules = [];
 
     if (!rule1) {
       failedRules.push({
         name: "Core Vs Warehouse Deposit",
+
         difference: rule1Difference,
       });
     }
@@ -360,6 +532,7 @@ const runReconciliation = async () => {
     if (!rule2) {
       failedRules.push({
         name: "Retail + Segmentation Validation",
+
         difference: rule2Difference,
       });
     }
@@ -367,15 +540,31 @@ const runReconciliation = async () => {
     if (!rule3) {
       failedRules.push({
         name: "Segment Total Validation",
+
         difference: rule3Difference,
       });
     }
 
     /*
-    ===============================
-    SEND EMAIL
-    ===============================
-    */
+        =================================================
+        STEP 8
+        UPDATE RECONCILIATION RUN STATUS
+        =================================================
+
+        The reconciliation process itself completed.
+
+        PASS/FAIL is represented by the individual
+        reconciliation results.
+        */
+
+    await reconciliationRepository.updateRunStatus(runId, "COMPLETED");
+
+    /*
+        =================================================
+        STEP 9
+        SEND NOTIFICATION
+        =================================================
+        */
 
     if (failedRules.length === 0) {
       await notificationService.reconciliationSuccess({
@@ -383,9 +572,9 @@ const runReconciliation = async () => {
 
         BUSINESS_DATE: businessDate,
 
-        CORE_DEPOSIT: core.totalDeposit,
+        CORE_DEPOSIT: coreAmount,
 
-        WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
+        WAREHOUSE_DEPOSIT: warehouseAmount,
       });
     } else {
       await notificationService.reconciliationFailure({
@@ -393,73 +582,204 @@ const runReconciliation = async () => {
 
         BUSINESS_DATE: businessDate,
 
-        CORE_DEPOSIT: core.totalDeposit,
+        CORE_DEPOSIT: coreAmount,
 
-        WAREHOUSE_DEPOSIT: warehouse.totalDeposit,
+        WAREHOUSE_DEPOSIT: warehouseAmount,
 
         FAILED_RULES: failedRules,
       });
     }
 
     /*
-    ===============================
-    RETURN RESULT
-    ===============================
-    */
+        =================================================
+        STEP 10
+        RETURN RESULT
+        =================================================
+        */
 
     return {
       runId,
+
+      businessDate,
 
       timestamp: new Date(),
 
       monitoringStatus: "ACTIVE",
 
-      coreDeposit: core.totalDeposit,
+      /*
+            CORE
+            */
 
-      warehouseDeposit: warehouse.totalDeposit,
+      coreDeposit: coreAmount,
 
-      retailDeposit: warehouse.retailDeposit,
+      /*
+            WAREHOUSE
+            */
 
-      segmentationDeposit: warehouse.segmentationDeposit,
+      warehouseDeposit: warehouseAmount,
 
-      segments: warehouse.segments,
+      retailDeposit: retailDeposit,
+
+      segmentationDeposit: segmentationDeposit,
+
+      /*
+            SEGMENTS
+            */
+
+      segments: segments,
+
+      /*
+            RULE 1
+            */
 
       rule1: {
         name: "Warehouse Total Deposit Vs Core Total Deposit",
 
         status: rule1 ? "PASS" : "FAIL",
 
+        expected: coreAmount,
+
+        actual: warehouseAmount,
+
         difference: rule1Difference,
       },
+
+      /*
+            RULE 2
+            */
 
       rule2: {
         name: "Retail + Segmentation Validation",
 
         status: rule2 ? "PASS" : "FAIL",
 
+        expected: warehouseAmount,
+
+        actual: calculatedTotal,
+
         difference: rule2Difference,
       },
+
+      /*
+            RULE 3
+            */
 
       rule3: {
         name: "Segment Total Validation",
 
         status: rule3 ? "PASS" : "FAIL",
 
+        expected: segmentationDeposit,
+
+        actual: segmentTotal,
+
         difference: rule3Difference,
+      },
+
+      /*
+            SUMMARY
+            */
+
+      summary: {
+        totalRules: 3,
+
+        passed: [rule1, rule2, rule3].filter(Boolean).length,
+
+        failed: failedRules.length,
       },
     };
   } catch (error) {
-    console.error(error);
+    /*
+        =================================================
+        RECONCILIATION FAILED
+        =================================================
+        */
 
-    await reconciliationRepository.updateRunStatus(runId, "FAILED");
+    console.error("========================================");
 
-    await notificationService.reconciliationFailure({
-      RUN_ID: runId,
+    console.error("Reconciliation failed");
 
-      BUSINESS_DATE: businessDate,
+    console.error("Run ID:", runId);
 
-      ERROR: error.message,
-    });
+    console.error("Error:", error.message);
+
+    console.error("========================================");
+
+    /*
+        =================================================
+        UPDATE RUN STATUS
+        =================================================
+        */
+
+    try {
+      await reconciliationRepository.updateRunStatus(runId, "FAILED");
+    } catch (statusError) {
+      console.error(
+        "Failed to update reconciliation run status:",
+        statusError.message,
+      );
+    }
+
+    /*
+        =================================================
+        SAVE CORE FAILURE SNAPSHOT
+        =================================================
+
+        If the DB2 query fails, there may be no
+        queryStartTime available from core.
+
+        We therefore save a FAILED record.
+
+        IMPORTANT:
+        runId is also stored here.
+        */
+
+    try {
+      await coreDepositRepository.saveFailedDeposit({
+        runId,
+
+        businessDate,
+
+        queryStartTime: null,
+
+        queryEndTime: new Date(),
+
+        durationSeconds: null,
+
+        errorMessage: error.message,
+
+        createdBy,
+      });
+    } catch (saveError) {
+      console.error("Could not save core failure snapshot:", saveError.message);
+    }
+
+    /*
+        =================================================
+        SEND FAILURE NOTIFICATION
+        =================================================
+        */
+
+    try {
+      await notificationService.reconciliationFailure({
+        RUN_ID: runId,
+
+        BUSINESS_DATE: businessDate,
+
+        ERROR: error.message,
+      });
+    } catch (notificationError) {
+      console.error(
+        "Failed to send failure notification:",
+        notificationError.message,
+      );
+    }
+
+    /*
+        =================================================
+        RE-THROW ERROR
+        =================================================
+        */
 
     throw error;
   }
