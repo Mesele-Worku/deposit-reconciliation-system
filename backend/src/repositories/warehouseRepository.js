@@ -11,26 +11,26 @@
 // };
 
 const { autoCommit } = require("oracledb");
-const connectOracle = require("../config/oracleReadOnly");
-const loadDepositSummary = async (businessDate) => {
-  const connection = await connectOracle();
-  try {
-    await connection.execute(
-      `
-    BEGIN
-       CBS.LOAD_DWH_DEPOSIT_SUMMARY(
-       TO_DATE(:businessDate, 'YYYY-MM-DD')
-       );
-    END;
-    `,
-      { businessDate },
-      { autoCommit: true },
-    );
-    console.log("DWH Deposit Summary loaded.");
-  } finally {
-    await connection.close();
-  }
-};
+const connectOracle = require("../config/oracle");
+// const loadDepositSummary = async (businessDate) => {
+//   const connection = await connectOracle();
+//   try {
+//     await connection.execute(
+//       `
+//     BEGIN
+//        CBS.LOAD_DWH_DEPOSIT_SUMMARY(
+//        TO_DATE(:businessDate, 'YYYY-MM-DD')
+//        );
+//     END;
+//     `,
+//       { businessDate },
+//       { autoCommit: true },
+//     );
+//     console.log("DWH Deposit Summary loaded.");
+//   } finally {
+//     await connection.close();
+//   }
+// };
 
 const getDepositSummary = async () => {
   const connection = await connectOracle();
@@ -55,7 +55,7 @@ RETAIL_TOTAL_DEPOSIT,
   GOVERNMENT,
   MULTINATIONAL
 
-FROM CBS.REC_DEPOSIT_SUMMARY_RECONCILATION
+FROM APP_USER.REC_DEPOSIT_SUMMARY_RECONCILATION
 
 ORDER BY BUSINESS_DATE DESC
 
@@ -93,5 +93,5 @@ FETCH FIRST 1 ROW ONLY
 
 module.exports = {
   getDepositSummary,
-  loadDepositSummary,
+  // loadDepositSummary,
 };
