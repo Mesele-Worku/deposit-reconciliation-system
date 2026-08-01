@@ -1206,3 +1206,344 @@ CREATE TABLE APP_USER.REC_DEPOSIT_CORE
     CONSTRAINT CK_CORE_DEPOSIT_STATUS
         CHECK (STATUS IN ('SUCCESS', 'FAILED'))
 );
+
+
+
+-------------------------------------------------- OPTIMIZED FINAL VIEW CENTS LEVEL ---------------------------------------------
+    CREATE VIEW REC_VW_REC_DEPOSIT AS 
+     -- Prints Total Deposit calculating from MV_DAILY_SUMMARY_OF_DEPOSIT table
+WITH WarehouseTotalDeposit AS (
+--SELECT sum(YESTERDAYBALANCE) AS Warehouse_Deposit_Summar FROM CBS.MV_DEPOSIT_AS_OF_YESTERDAY
+SELECT sum(Total_Deposit_first) AS Warehouse_Deposit_Summar 
+FROM(
+SELECT T.Total_Deposit_first,T.Total_margin_first, (Total_Deposit_first - Total_margin_first)  AS Branch_Total_Deposit
+FROM 
+(SELECT 
+mdsod.*,
+(mdsod.CURRENTACCOUNTBALANCE + mdsod.SAVINGS +mdsod.SPECIALSAV + mdsod.TIMEDEPOSIT + mdsod.OD + mdsod.IFBDEPOSIT ) AS Total_Deposit_first, 
+(mdsod.MARGINHELDBALANCE + mdsod.MARGINIFBHELDBALANCE ) AS Total_margin_first 
+FROM CBS.MV_DAILY_SUMMARY_OF_DEPOSIT mdsod  --Summary of Deposit 
+) T
+)
+---------------------------------------------------------- End of Total Deposit From Daily Summary -----------------------------------------------------------------------
+
+-- Prints Yesterday Total Deposit
+--SELECT sum(YESTERDAYBALANCE) AS Warehouse_Total_deposit_yesterday FROM CBS.MV_DEPOSIT_AS_OF_YESTERDAY 
+---------------------------------------------------------- End of Total Deposit From Deposit as of Yesterday -------------------------------------------------------------
+--SELECT * FROM cbs.MV_BRANCHS_FOR_DEPOSIT WHERE BRANCHSORTCODE = '1000'
+---------------------------------------------------------- Start of Calculating Retail Total Deposit --------------------------------------------------------------------
+--Prints Total Conventional Deposit
+),ConventionalRetailDeposit as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as convTotalBalance ,count(distinct a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+inner join  cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('Savings','SpecialSAV','notice','fixdep') OR 
+(a.PRODUCT_ACC_PRODUCTID='CurrentAccount' and  a.accountid NOT in ('01304005574300','013041194227701')) OR 
+((a.PRODUCT_ACC_PRODUCTID='OverDrafts' or  a.accountid = '01304005574300') and  a.SHADOWCLEAREDBALANCE > 0)) 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) and a.UBSUBPRODUCTID not in ('01438','01432')
+and a.segmentname ='Retail' and a.SHADOWCLEAREDBALANCE < 20000000 AND b.BRANCHSORTCODE <> '1000'
+group by a.branchcode, b.branchType
+)
+,
+ConventionalRetailDepositabove20mil as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as convTotalBalance ,count(distinct a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('Savings','SpecialSAV','notice','fixdep') OR 
+(a.PRODUCT_ACC_PRODUCTID='CurrentAccount' and  a.accountid NOT in ('01304005574300','013041194227701')) OR 
+((a.PRODUCT_ACC_PRODUCTID='OverDrafts' or  a.accountid = '01304005574300') and  a.SHADOWCLEAREDBALANCE > 0)) 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) and a.UBSUBPRODUCTID not in ('01438','01432')
+and a.segmentname ='Retail' AND a.SHADOWCLEAREDBALANCE >= 20000000 AND b.BRANCHSORTCODE <> '1000'
+group by a.branchcode, b.branchType
+),
+TotalConvenDepositRetail AS
+(
+SELECT sum(t.CONV1 ) AS Conve_Total_Deposit_Retail
+FROM (
+SELECT sum(convTotalBalance) AS conv1 FROM ConventionalRetailDeposit
+UNION
+SELECT sum(convTotalBalance) AS conv2 FROM ConventionalRetailDepositabove20mil
+) t
+),
+--SELECT * FROM TotalConvenDepositRetail
+------------------------------------------------------------------- End of Conventional Total Deposit --------------------------------------------------------------------
+--Prints Total IFB Deposit
+IFBRetailDepositavove20mil as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as IFBtotalBalance ,count(distinct a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('IFBCurrent','IFBSavings','IFBSpecialSAV','MudarabaInvest') or a.UBSUBPRODUCTID in ('01438','01432') OR a.accountid='013041194227701') 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) 
+and a.segmentname ='Retail' AND a.SHADOWCLEAREDBALANCE >= 20000000 AND b.BRANCHSORTCODE <> '1000'
+group by a.branchcode, b.branchType
+
+)
+,
+IFBRetailDeposit as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as IFBtotalBalance ,count(distinct a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('IFBCurrent','IFBSavings','IFBSpecialSAV','MudarabaInvest') or a.UBSUBPRODUCTID in ('01438','01432') OR a.accountid='013041194227701') 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) 
+and a.segmentname ='Retail' and a.SHADOWCLEAREDBALANCE < 20000000 AND b.BRANCHSORTCODE <> '1000'
+group by a.branchcode, b.branchType
+),
+TotalIFBDepositRetail AS(
+SELECT sum(t.IFBDep) AS IFB_Total_Deposit_Retail
+FROM (
+SELECT sum(IFBTOTALBALANCE) AS IFBDep FROM IFBRetailDeposit
+UNION
+SELECT sum(IFBTOTALBALANCE) AS IFBDep FROM IFBRetailDepositavove20mil
+) t
+)
+--SELECT * FROM TotalIFBDepositRetail
+------------------------------------------------------------------------ End of IFB Total Deposit -------------------------------------------------------------------------------------
+-- Print Retail Total Deposit
+,RetailTotalDeposit AS (
+SELECT sum(t.IFB_TOTAL_DEPOSIT_RETAIL) AS RetailTotalDeposit
+FROM (
+SELECT * FROM TotalIFBDepositRetail
+UNION all
+SELECT * FROM TotalConvenDepositRetail
+)t
+)
+--------------------------------------------------------------End Of Retail Total Deposit------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------Start Of Segment Total Deposit---------------------------------------------------------------------------------------------------------
+--Prints Total Conventional Segment Deposit
+, SegmentDeposit as
+(
+select count(distinct a.accountid) as segmentCount,sum(a.SHADOWCLEAREDBALANCE) as SegmentBalance,a.branchcode as totalBranch,b.branchtype
+from cbs.MV_ACCOUNT_BALANCE_D a
+--inner join cbs.DIM_AIB_RMSEGMENT ra ON a.UBCUSTOMERCODE  = ra.CUSTOMERCODE
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('Savings','SpecialSAV','notice','fixdep') OR 
+(a.PRODUCT_ACC_PRODUCTID='CurrentAccount' and  a.accountid NOT in ('01304005574300','013041194227701')) OR 
+((a.PRODUCT_ACC_PRODUCTID='OverDrafts' or  a.accountid = '01304005574300') and  a.SHADOWCLEAREDBALANCE > 0)) and a.UBSUBPRODUCTID not in ('01438','01432')
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) and a.SHADOWCLEAREDBALANCE < 20000000
+and a.segmentname <> 'Retail'
+group by a.branchcode, b.branchType
+),
+SegmentDepositabove20mil as
+(
+select count(distinct a.accountid) as segmentCount,sum(a.SHADOWCLEAREDBALANCE) as SegmentBalance,a.branchcode as totalBranch,b.branchtype
+from cbs.MV_ACCOUNT_BALANCE_D a
+--inner join cbs.DIM_AIB_RMSEGMENT ra ON a.UBCUSTOMERCODE  = ra.CUSTOMERCODE
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('Savings','SpecialSAV','notice','fixdep') OR 
+(a.PRODUCT_ACC_PRODUCTID='CurrentAccount' and  a.accountid NOT in ('01304005574300','013041194227701')) OR 
+((a.PRODUCT_ACC_PRODUCTID='OverDrafts' or  a.accountid = '01304005574300') and  a.SHADOWCLEAREDBALANCE > 0)) and a.UBSUBPRODUCTID not in ('01438','01432')
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) AND a.SHADOWCLEAREDBALANCE >= 20000000
+and a.segmentname <> 'Retail'
+group by a.branchcode, b.branchType
+),
+TotalConvenDepositSegment AS
+(
+SELECT sum(t.convSegment1) AS Conve_Total_Deposit_Retail
+FROM (
+SELECT sum(SEGMENTBALANCE) AS convSegment1 FROM SegmentDeposit
+union
+SELECT sum(SEGMENTBALANCE) AS convSegment2 FROM SegmentDepositabove20mil
+) t
+),
+
+-- SELECT * FROM TotalConvenDepositSegment
+------------------------------------------------------------------- End of Conventional Total Deposit Segment--------------------------------------------------------------------
+--Prints Total IFB Deposit Segment
+IFBSegmentDepositavove20mil as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as IFBtotalBalance ,count( a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+--inner join cbs.DIM_AIB_RMSEGMENT ra ON a.UBCUSTOMERCODE  = ra.CUSTOMERCODE
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('IFBCurrent','IFBSavings','IFBSpecialSAV','MudarabaInvest') or a.UBSUBPRODUCTID in ('01438','01432') OR a.accountid='013041194227701') 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0))
+and  a.SHADOWCLEAREDBALANCE >= 20000000 and a.segmentname <> 'Retail'
+group by a.branchcode, b.branchType
+)
+,
+IFBSegmentDeposit as
+(
+SELECT sum(a.SHADOWCLEAREDBALANCE) as IFBtotalBalance ,count( a.ACCOUNTID ) as countOftotal ,a.branchcode as totalBranch, b.branchType
+FROM  cbs.MV_ACCOUNT_BALANCE_D a
+--inner join cbs.DIM_AIB_RMSEGMENT ra ON a.UBCUSTOMERCODE  = ra.CUSTOMERCODE
+inner join cbs.MV_BRANCHS_FOR_DEPOSIT b on b.branchcode = a.branchcode and b.branchtype = a.branchtype
+where (a.PRODUCT_ACC_PRODUCTID in ('IFBCurrent','IFBSavings','IFBSpecialSAV','MudarabaInvest') or a.UBSUBPRODUCTID in ('01438','01432') OR a.accountid='013041194227701' ) 
+and (a.closed='N' or (a.closed='Y' and a.SHADOWCLEAREDBALANCE <> 0)) and a.SHADOWCLEAREDBALANCE < 20000000
+and a.segmentname <> 'Retail'
+group by a.branchcode, b.branchType
+),
+
+TotalIFBDepositSegment AS(
+SELECT sum(t.IFBDepSegment1) AS IFB_Total_Deposit_Segment
+FROM (
+SELECT sum(IFBTOTALBALANCE) AS IFBDepSegment1 FROM IFBSegmentDeposit
+union
+SELECT sum(IFBTOTALBALANCE) AS IFBDepSegment2 FROM IFBSegmentDepositavove20mil
+) t
+),
+--- SELECT * FROM TotalIFBDepositSegment
+------------------------------------------------------------------------ End of IFB Total Deposit Segment -------------------------------------------------------------------------------------
+-- Print Retail Total Deposit
+SegmentTotalDeposit AS (
+SELECT sum(t.IFB_Total_Deposit_Segment) AS RetailTotalDeposit
+FROM (
+SELECT * FROM TotalIFBDepositSegment
+UNION ALL 
+SELECT * FROM TotalConvenDepositSegment
+)t
+),
+--------------------------------------------------------------End Of Segment Total Deposit------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------- Start of Indicvidual Segment ----------------------------------------------------------------------------------------------------------
+individualSegment AS
+(
+    SELECT
+        SUM(CASE WHEN SEGMENTNAME='CORPORATE'
+                 THEN Individual_Total_deposit ELSE 0 END) AS CORPORATE,
+
+        SUM(CASE WHEN SEGMENTNAME='IFBCRM'
+                 THEN Individual_Total_deposit ELSE 0 END) AS IFBCRM,
+
+        SUM(CASE WHEN SEGMENTNAME='SME'
+                 THEN Individual_Total_deposit ELSE 0 END) AS SME,
+
+        SUM(CASE WHEN SEGMENTNAME='BUSINESS'
+                 THEN Individual_Total_deposit ELSE 0 END) AS BUSINESS,
+
+        SUM(CASE WHEN SEGMENTNAME='GOVERNMENT'
+                 THEN Individual_Total_deposit ELSE 0 END) AS GOVERNMENT,
+
+        SUM(CASE WHEN SEGMENTNAME='MULTINATIONAL'
+                 THEN Individual_Total_deposit ELSE 0 END) AS MULTINATIONAL
+
+    FROM
+    (
+        SELECT
+            CASE
+                WHEN SEGMENTNAME IN ('INSTITUTIONAL','GOVERNMENT')
+                THEN 'GOVERNMENT'
+                ELSE SEGMENTNAME
+            END AS SEGMENTNAME,
+            SUM(YESTERDAYBALANCE) AS Individual_Total_deposit
+        FROM CBS.MV_DEPOSIT_AS_OF_YESTERDAY
+        GROUP BY
+            CASE
+                WHEN SEGMENTNAME IN ('INSTITUTIONAL','GOVERNMENT')
+                THEN 'GOVERNMENT'
+                ELSE SEGMENTNAME
+            END
+    )
+),
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    FinalSummary AS
+    (
+        SELECT
+            Warehouse_Deposit_Summar AS TOTAL_DEPOSIT,
+
+            (
+                SELECT Conve_Total_Deposit_Retail
+                FROM TotalConvenDepositRetail
+            )
+            +
+            (
+                SELECT Conve_Total_Deposit_Retail
+                FROM TotalConvenDepositSegment
+            ) AS TOTAL_CONVENTIONAL,
+
+            (
+                SELECT IFB_Total_Deposit_Retail
+                FROM TotalIFBDepositRetail
+            )
+            +
+            (
+                SELECT IFB_Total_Deposit_Segment
+                FROM TotalIFBDepositSegment
+            ) AS TOTAL_IFB,
+
+            (
+                SELECT RetailTotalDeposit
+                FROM RetailTotalDeposit
+            ) AS RETAIL_TOTAL_DEPOSIT,
+
+            (
+                SELECT Conve_Total_Deposit_Retail
+                FROM TotalConvenDepositRetail
+            ) AS CONVENTIONAL_RETAIL_TOTAL,
+
+            (
+                SELECT IFB_Total_Deposit_Retail
+                FROM TotalIFBDepositRetail
+            ) AS IFB_RETAIL_TOTAL,
+
+            (
+                SELECT RetailTotalDeposit
+                FROM SegmentTotalDeposit
+            ) AS SEGMENT_TOTAL_DEPOSIT,
+
+            (
+                SELECT Conve_Total_Deposit_Retail
+                FROM TotalConvenDepositSegment
+            ) AS CONVENTIONAL_SEGMENT_TOTAL,
+
+            (
+                SELECT IFB_Total_Deposit_Segment
+                FROM TotalIFBDepositSegment
+            ) AS IFB_SEGMENT_TOTAL,
+			(
+			    SELECT CORPORATE
+			    FROM individualSegment
+			) AS CORPORATE,
+
+			(
+			    SELECT IFBCRM
+			    FROM individualSegment
+			) AS IFBCRM,
+			
+			(
+			    SELECT SME
+			    FROM individualSegment
+			) AS SME,
+			
+			(
+			    SELECT BUSINESS
+			    FROM individualSegment
+			) AS BUSINESS,
+			
+			(
+			    SELECT GOVERNMENT
+			    FROM individualSegment
+			) AS GOVERNMENT,
+			
+			(
+			    SELECT MULTINATIONAL
+			    FROM individualSegment
+			) AS MULTINATIONAL
+        FROM WarehouseTotalDeposit
+    )
+
+    SELECT
+        -- p_business_date,
+        sysdate AS BUSINESS_DATE,
+        'DWH'AS SOURCE_SYSTEM,
+        TOTAL_DEPOSIT AS TOTAL_DEPOSIT,
+        TOTAL_CONVENTIONAL AS TOTAL_CONVENTIONAL,
+        TOTAL_IFB AS TOTAL_IFB,
+        RETAIL_TOTAL_DEPOSIT AS RETAIL_TOTAL_DEPOSIT,
+        CONVENTIONAL_RETAIL_TOTAL AS CONVENTIONAL_RETAIL_TOTAL,
+        IFB_RETAIL_TOTAL AS IFB_RETAIL_TOTAL,
+        SEGMENT_TOTAL_DEPOSIT AS SEGMENT_TOTAL_DEPOSIT,
+        CONVENTIONAL_SEGMENT_TOTAL AS CONVENTIONAL_SEGMENT_TOTAL,
+        IFB_SEGMENT_TOTAL AS IFB_SEGMENT_TOTAL,
+        CORPORATE AS CORPORATE,
+        IFBCRM AS IFBCRM,
+	    SME AS SME,
+	    BUSINESS AS BUSINESS,
+	    GOVERNMENT AS GOVERNMENT,
+	    MULTINATIONAL AS MULTINATIONAL
+
+	FROM FinalSummary

@@ -9,7 +9,7 @@ const connectOracle = async () => {
       password: process.env.ORACLE_PASSWORD,
 
       connectString: `${process.env.ORACLE_HOST}:${process.env.ORACLE_PORT}/${process.env.ORACLE_SERVICE}`,
-      privilege: oracledb.SYSDBA,
+      // privilege: oracledb.SYSDBA,
     });
 
     console.log("Oracle Database Connected Successfully");

@@ -692,7 +692,7 @@ const getDepositSummaryFromCore = async () => {
     Example:
     */
 
-  const mockDeposit = "480563415325.438934";
+  const mockDeposit = "483527914376.4746258388";
 
   console.log("========================================");
 
