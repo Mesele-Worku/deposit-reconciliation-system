@@ -195,8 +195,59 @@ const getResultsByRun = async (runId) => {
   }
 };
 
+const getLatestResults = async () => {
+  const connection = await connectOracle();
+
+  try {
+    const result = await connection.execute(
+      `
+            SELECT
+
+                r.RESULT_ID,
+
+                r.RULE_NAME AS NAME,
+
+                r.STATUS,
+
+                r.EXPECTED_VALUE,
+
+                r.ACTUAL_VALUE,
+
+                r.DIFFERENCE,
+
+                r.MESSAGE
+
+            FROM APP_USER.REC_RECONCILIATION_RESULT r
+
+            JOIN APP_USER.REC_RECONCILIATION_RUN run
+
+            ON r.RUN_ID = run.RUN_ID
+
+
+            WHERE run.RUN_ID =
+            (
+                SELECT MAX(RUN_ID)
+                FROM APP_USER.REC_RECONCILIATION_RUN
+            )
+
+
+            ORDER BY r.RESULT_ID
+            `,
+      [],
+      {
+        outFormat: require("oracledb").OUT_FORMAT_OBJECT,
+      },
+    );
+
+    return result.rows;
+  } finally {
+    await connection.close();
+  }
+};
+
 module.exports = {
   saveResult,
 
   getResultsByRun,
+  getLatestResults,
 };

@@ -18,9 +18,9 @@ const RuleCard = ({ rule }) => {
         : 'text-yellow-600';
 
   return (
-    <div className={`rounded-xl border-l-4 bg-white p-5 shadow ${statusColor} `}>
+    <div className={`rounded-xl border border-l-4 bg-white p-5 shadow ${statusColor} `}>
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-bold text-gray-700">{rule.name}</h3>
+        <h3 className="text-sm font-bold text-gray-700 uppercase">{rule.name}</h3>
 
         <span className={`text-sm font-bold ${statusText} `}>{rule.status}</span>
       </div>

@@ -10,7 +10,7 @@
 //     getDepositSummary
 // };
 
-const { autoCommit } = require("oracledb");
+const oracledb = require("oracledb");
 const connectOracle = require("../config/oracleReadOnly");
 // const loadDepositSummary = async (businessDate) => {
 //   const connection = await connectOracle();
@@ -66,64 +66,44 @@ const loadDepositSummary = async (businessDate) => {
   }
 };
 
-// const getDepositSummary = async () => {
-//   const connection = await connectOracle();
+const getRecentDepositSummary = async () => {
+  const connection = await connectOracle();
 
-//   const summary = await connection.execute(
-//     `
-// SELECT
+  const summary = await connection.execute(
+    `
+SELECT
+TOTAL_DEPOSIT,
+RETAIL_TOTAL_DEPOSIT,
+ SEGMENT_TOTAL_DEPOSIT,
+ TOTAL_CONVENTIONAL,
+ TOTAL_IFB,
+ CONVENTIONAL_RETAIL_TOTAL,
+ CONVENTIONAL_SEGMENT_TOTAL,
+ IFB_RETAIL_TOTAL,
+ IFB_SEGMENT_TOTAL,
+ CORPORATE,
+ IFBCRM,
+  SME,
+  BUSINESS,
+  GOVERNMENT,
+  MULTINATIONAL,
+  BUSINESS_DATE
 
-// TOTAL_DEPOSIT,
-// RETAIL_TOTAL_DEPOSIT,
-//  SEGMENT_TOTAL_DEPOSIT,
-//  TOTAL_CONVENTIONAL,
-//  TOTAL_IFB,
-//  CONVENTIONAL_RETAIL_TOTAL,
-//  CONVENTIONAL_SEGMENT_TOTAL,
-//  IFB_RETAIL_TOTAL,
-//  IFB_SEGMENT_TOTAL,
-//  CORPORATE,
-//  IFBCRM,
-//   SME,
-//   BUSINESS,
-//   GOVERNMENT,
-//   MULTINATIONAL
+FROM CBS.REC_DEPOSIT_SUMMARY_RECONCILATION
 
-// FROM CBS.REC_DEPOSIT_SUMMARY_RECONCILATION
+ORDER BY BUSINESS_DATE DESC
 
-// ORDER BY BUSINESS_DATE DESC
+FETCH FIRST 6 ROWS ONLY
 
-// FETCH FIRST 1 ROW ONLY
-
-// `,
-//   );
-
-//   await connection.close();
-
-//   const row = summary.rows[0];
-
-//   const segmentObject = {
-//     corporate: row[9],
-//     ifbcrm: row[10],
-//     sme: row[11],
-//     business: row[12],
-//     government: row[13],
-//     multinational: row[14],
-//   };
-
-//   return {
-//     totalDeposit: row[0],
-//     retailDeposit: row[1],
-//     segmentationDeposit: row[2],
-//     totalConventional: row[3],
-//     totalIFB: row[4],
-//     conventionalRetail: row[5],
-//     conventionalSegment: row[6],
-//     ifbRetail: row[7],
-//     ifbSegment: row[8],
-//     segments: segmentObject,
-//   };
-// };
+`,
+    [],
+    {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    },
+  );
+  await connection.close();
+  return summary.rows;
+};
 
 const getDepositSummary = async () => {
   const connection = await connectOracle();
@@ -203,4 +183,5 @@ FETCH FIRST 1 ROW ONLY
 module.exports = {
   getDepositSummary,
   loadDepositSummary,
+  getRecentDepositSummary,
 };

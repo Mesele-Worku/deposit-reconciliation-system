@@ -29,11 +29,14 @@ const DashboardFooter = ({ latestRun, lastRefresh, jobs }) => {
         </div>
       </div>
 
-      <div className="mt-5 border-t pt-4 text-center text-sm text-gray-500">
+      {/* <div className="mt-5 border-t pt-4 text-center text-sm text-gray-500">
         Dashboard Refresh:
         <span className="ml-2 font-semibold text-[#232A78]">
           {lastRefresh ? lastRefresh.toLocaleTimeString() : '-'}
         </span>
+      </div> */}
+      <div className="mt-5 border-t pt-4 text-center text-sm text-gray-500">
+        © 2026 Data Analytics and Information Management. All rights reserved.
       </div>
     </section>
   );

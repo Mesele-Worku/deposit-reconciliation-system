@@ -356,6 +356,7 @@ const getLatestJobs = async () => {
                 JOB_TYPE,
                 START_TIME,
                 END_TIME,
+                END_TIME,
                 STATUS,
                 ERROR_MESSAGE,
                 CREATED_DATE
