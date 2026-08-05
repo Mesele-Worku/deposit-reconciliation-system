@@ -869,9 +869,9 @@ const runReconciliation = async ({ createdBy = "SYSTEM" } = {}) => {
         */
 
     console.log("Starting Core Banking data extraction...");
-
+    console.log("STEP 3 STARTING CORE QUERY");
     const core = await coreRepository.getDepositSummaryFromCore();
-
+    console.log("STEP 3 CORE QUERY FINISHED");
     console.log("Core Banking data received:");
     console.log(core);
 

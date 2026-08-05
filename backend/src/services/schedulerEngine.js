@@ -1,350 +1,106 @@
+// OLD Scheduler
 // const cron = require("node-cron");
 
-// const schedulerRepository = require("../repositories/scheduleRepository");
+// const scheduleRepository = require("../repositories/scheduleRepository");
 
-// const reconciliationService = require("./reconciliationService");
+// const reconciliationService = require("../services/reconciliationService");
 
 // const jobRepository = require("../repositories/jobHistoryRepository");
 
 // const startScheduler = () => {
 //   /*
-//         Run every minute
+//         Scheduler runs every minute
 
-//         * * * * *
-//         | | | | |
-//         | | | | |
-//         | | | | +---- Day of week
-//         | | | +------ Month
-//         | | +-------- Day
-//         | +---------- Hour
-//         +------------ Minute
-
+//         It checks database schedule table
 //     */
 
-//   cron.schedule("* * * * *", async () => {
-//     try {
-//       const schedule = await schedulerRepository.getSchedule();
+//   cron.schedule(
+//     "* * * * *",
 
-//       if (!schedule) {
-//         return;
-//       }
-
-//       if (schedule.STATUS !== "ACTIVE") {
-//         return;
-//       }
-
-//       const now = new Date();
-
-//       const currentTime = now.toLocaleTimeString("en-GB", {
-//         hour: "2-digit",
-//         minute: "2-digit",
-//         timeZone: schedule.TIMEZONE,
-//       });
-
-//       if (currentTime !== schedule.RUN_TIME) {
-//         return;
-//       }
-
-//       console.log("Automatic reconciliation started");
-
-//       /*
-//                     Create Job
-//                 */
-
-//       const jobId = await jobRepository.createJob("SCHEDULED");
-
-//       /*
-//                     Execute reconciliation
-//                 */
-
-//       const result = await reconciliationService.runReconciliation();
-
-//       /*
-//                     Link job with run
-//                 */
-
-//       await jobRepository.updateJobRunId(
-//         jobId,
-
-//         result.runId,
-//       );
-
-//       await jobRepository.completeJob(
-//         jobId,
-
-//         "SUCCESS",
-//       );
-
-//       console.log("Automatic reconciliation completed");
-//     } catch (error) {
-//       console.error("Scheduler failed:", error.message);
-//     }
-//   });
-// };
-
-// module.exports = {
-//   startScheduler,
-// };
-
-// // const cron = require("node-cron");
-
-// // const schedulerRepository = require("../repositories/scheduleRepository");
-
-// // const reconciliationService = require("./reconciliationService");
-
-// // const jobRepository = require("../repositories/jobHistoryRepository");
-
-// // /*
-// // ========================================
-// // Prevent duplicate execution
-// // ========================================
-// // */
-
-// // let isRunning = false;
-
-// // let lastExecutionKey = "";
-
-// // const startScheduler = () => {
-// //   console.log("Scheduler started...");
-
-// //   /*
-// //         Run every minute
-
-// //         * * * * *
-// //         | | | | |
-// //         | | | | +---- Day of week
-// //         | | | +------ Month
-// //         | | +-------- Day
-// //         | +---------- Hour
-// //         +------------ Minute
-// //     */
-
-// //   cron.schedule("* * * * *", async () => {
-// //     try {
-// //       const schedule = await schedulerRepository.getSchedule();
-
-// //       if (!schedule) {
-// //         return;
-// //       }
-
-// //       if (schedule.STATUS !== "ACTIVE") {
-// //         return;
-// //       }
-
-// //       const now = new Date();
-
-// //       const currentTime = now.toLocaleTimeString("en-GB", {
-// //         hour: "2-digit",
-// //         minute: "2-digit",
-// //         timeZone: schedule.TIMEZONE,
-// //       });
-
-// //       /*
-// //             Ensure only HH:mm is compared
-// //             */
-
-// //       const scheduleTime = String(schedule.RUN_TIME).substring(0, 5);
-
-// //       if (currentTime !== scheduleTime) {
-// //         return;
-// //       }
-
-// //       /*
-// //             Prevent running twice
-// //             */
-
-// //       const executionKey = `${now.toISOString().substring(0, 10)}_${scheduleTime}`;
-
-// //       if (executionKey === lastExecutionKey) {
-// //         console.log("Scheduler already executed for this schedule.");
-
-// //         return;
-// //       }
-
-// //       /*
-// //             Prevent overlapping execution
-// //             */
-
-// //       if (isRunning) {
-// //         console.log("Previous reconciliation is still running.");
-
-// //         return;
-// //       }
-
-// //       isRunning = true;
-
-// //       lastExecutionKey = executionKey;
-
-// //       console.log("Automatic reconciliation started");
-
-// //       /*
-// //             Create Job
-// //             */
-
-// //       const jobId = await jobRepository.createJob("SCHEDULED");
-
-// //       /*
-// //             Execute reconciliation
-// //             */
-
-// //       const result = await reconciliationService.runReconciliation();
-
-// //       /*
-// //             Link Job
-// //             */
-
-// //       await jobRepository.updateJobRunId(jobId, result.runId);
-
-// //       /*
-// //             Complete Job
-// //             */
-
-// //       await jobRepository.completeJob(jobId, "SUCCESS");
-
-// //       console.log("Automatic reconciliation completed");
-// //     } catch (error) {
-// //       console.error("Scheduler failed:", error);
-// //     } finally {
-// //       isRunning = false;
-// //     }
-// //   });
-// // };
-
-// // module.exports = {
-// //   startScheduler,
-// // };
-
-// const cron = require("node-cron");
-
-// const scheduleRepository = require("../repositories/scheduleRepository");
-
-// const reconciliationService = require("./reconciliationService");
-
-// const jobRepository = require("../repositories/jobHistoryRepository");
-
-// let isRunning = false;
-
-// /*
-//     Scheduler runs every minute
-
-//     It checks:
-//     - Is scheduler active?
-//     - Is current time equal to configured time?
-//     - Is another reconciliation already running?
-
-// */
-
-// const startScheduler = () => {
-//   console.log("Scheduler started");
-
-//   cron.schedule("* * * * *", async () => {
-//     try {
-//       /*
-//                 Prevent duplicate execution
-
-//                 Example:
-//                 Query takes 1 hour
-//                 Scheduler should not start again
-//             */
-
-//       if (isRunning) {
-//         console.log("Reconciliation already running");
-
-//         return;
-//       }
-
-//       const schedule = await scheduleRepository.getSchedule();
-
-//       if (!schedule) {
-//         return;
-//       }
-
-//       if (schedule.STATUS !== "ACTIVE") {
-//         return;
-//       }
-
-//       const now = new Date();
-
-//       const currentTime = now.toLocaleTimeString("en-GB", {
-//         hour: "2-digit",
-//         minute: "2-digit",
-//         timeZone: schedule.TIMEZONE,
-//       });
-
-//       if (currentTime !== schedule.RUN_TIME) {
-//         return;
-//       }
-
-//       /*
-//                 Start reconciliation
-//             */
-
-//       isRunning = true;
-
-//       console.log("Automatic reconciliation started");
-
-//       /*
-//                 Create job history
-//             */
-
-//       const jobId = await jobRepository.createJob("SCHEDULED");
-
+//     async () => {
 //       try {
-//         /*
-//                     Execute reconciliation
+//         const schedule = await scheduleRepository.getActiveSchedule();
 
-//                     This will:
-//                     - create REC_RECONCILIATION_RUN
-//                     - load core deposit if required
-//                     - load warehouse
-//                     - compare
-//                     - save result
-//                     - notify
-//                 */
+//         if (!schedule) {
+//           console.log("No active reconciliation schedule");
 
-//         const result = await reconciliationService.runReconciliation();
+//           return;
+//         }
 
-//         /*
-//                     Link job with run
-//                 */
+//         const now = new Date();
 
-//         await jobRepository.updateJobRunId(jobId, result.runId);
+//         const currentTime = now.toLocaleTimeString("en-US", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//           hour12: false,
+//           timeZone: schedule.TIMEZONE,
+//         });
 
-//         /*
-//                     Mark job success
-//                 */
+//         const currentDay = now
+//           .toLocaleDateString("en-US", {
+//             weekday: "short",
+//             timeZone: schedule.TIMEZONE,
+//           })
+//           .toUpperCase();
 
-//         await jobRepository.completeJob(
-//           jobId,
+//         const allowedDays = schedule.DAYS_OF_WEEK.split(",");
 
-//           "SUCCESS",
-//         );
+//         if (
+//           currentTime === schedule.RUN_TIME &&
+//           allowedDays.includes(currentDay)
+//         ) {
+//           console.log("Starting scheduled reconciliation...");
 
-//         console.log("Automatic reconciliation completed");
+//           let jobId;
+
+//           try {
+//             /*
+//                            Create job history
+//                         */
+
+//             jobId = await jobRepository.createJob("SCHEDULED");
+
+//             await reconciliationService.runReconciliation();
+
+//             await jobRepository.completeJob(
+//               jobId,
+
+//               "SUCCESS",
+//             );
+
+//             console.log("Scheduled reconciliation completed");
+//           } catch (error) {
+//             if (jobId) {
+//               await jobRepository.completeJob(
+//                 jobId,
+
+//                 "FAILED",
+
+//                 error.message,
+//               );
+//             }
+
+//             console.error(
+//               "Scheduled reconciliation failed:",
+
+//               error.message,
+//             );
+//           }
+//         }
 //       } catch (error) {
-//         console.error("Reconciliation failed:", error.message);
-
-//         await jobRepository.completeJob(
-//           jobId,
-
-//           "FAILED",
+//         console.error(
+//           "Scheduler Error:",
 
 //           error.message,
 //         );
-
-//         throw error;
 //       }
-//     } catch (error) {
-//       console.error("Scheduler Error:", error.message);
-//     } finally {
-//       isRunning = false;
-//     }
-//   });
+//     },
+//   );
+
+//   console.log("Dynamic reconciliation scheduler started");
 // };
 
-// module.exports = {
-//   startScheduler,
-// };
+// module.exports = startScheduler;
 
 const cron = require("node-cron");
 
@@ -372,8 +128,10 @@ scheduler sees reconciliationRunning = true
         ↓
 does NOT start another reconciliation
 */
+// let reconciliationRunning = false;
 let reconciliationRunning = false;
-
+let schedulerStarted = false;
+let lastExecutionKey = null;
 /*
 ========================================================
 CHECK WHETHER CURRENT TIME MATCHES SCHEDULE
@@ -589,7 +347,18 @@ const startScheduler = () => {
     Meaning:
         every minute
     */
+  if (schedulerStarted) {
+    console.log("Scheduler already initialized. Skipping.");
 
+    return;
+  }
+
+  schedulerStarted = true;
+
+  console.log("Reconciliation scheduler started.");
+  console.log("========== SCHEDULER INITIALIZED ==========");
+
+  console.log("Process ID:", process.pid);
   cron.schedule("* * * * *", async () => {
     try {
       /*
@@ -635,10 +404,44 @@ const startScheduler = () => {
       }
 
       /*
-                =========================================
-                3. EXECUTE RECONCILIATION
-                =========================================
-                */
+==========================================
+PREVENT SAME DAY DUPLICATE EXECUTION
+==========================================
+
+Example:
+
+2026-08-03_10:06
+
+After first execution:
+
+lastExecutionKey =
+2026-08-03_10:06
+
+
+Second cron check:
+
+same key
+
+skip
+
+==========================================
+*/
+
+      const today = new Date().toISOString().substring(0, 10);
+
+      const executionKey = `${today}_${schedule.RUN_TIME}`;
+
+      if (lastExecutionKey === executionKey) {
+        console.log("Schedule already executed for this time.");
+
+        return;
+      }
+
+      /*
+    Mark executed BEFORE starting
+*/
+
+      lastExecutionKey = executionKey;
 
       await executeScheduledReconciliation();
     } catch (error) {

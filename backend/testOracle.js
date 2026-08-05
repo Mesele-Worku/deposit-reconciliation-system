@@ -7,9 +7,10 @@ async function test() {
 
   try {
     connection = await connectOracle();
-
+    // DELETE FROM APP_USER.REC_RECONCILIATION_RUN WHERE RUN_ID IN (207, 173)
     const sql = `
-      DELETE FROM APP_USER.REC_RECONCILIATION_JOB_HISTORY
+      
+      DELETE FROM APP_USER.REC_RECONCILIATION_RUN WHERE RUN_ID IN (211)
     `;
 
     const result = await connection.execute(sql, [], {

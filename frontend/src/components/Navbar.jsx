@@ -1,461 +1,7 @@
-// import { useState } from 'react';
-
-// import { Link } from 'react-router-dom';
-
-// import { FaBell, FaUserCircle, FaBars, FaTimes, FaUniversity } from 'react-icons/fa';
-
-// import { useAuth } from '../context/authContext';
-
-// const Navbar = () => {
-//   const { user, logout } = useAuth();
-
-//   const [open, setOpen] = useState(false);
-
-//   const closeMenu = () => {
-//     setOpen(false);
-//   };
-
-//   return (
-//     <nav className="bg-[#232A78] text-white shadow-lg">
-//       <div className="mx-auto flex max-w-full items-center justify-between px-4 py-4">
-//         {/* LOGO */}
-
-//         <div className="flex items-center gap-3">
-//           <div className="rounded-lg bg-white p-2 text-[#232A78]">
-//             <FaUniversity size={22} />
-//           </div>
-
-//           <div>
-//             <h1 className="text-xl font-bold">EDRMS</h1>
-
-//             <p className="hidden text-xs text-gray-200 sm:block">
-//               Enterprise Deposit Reconciliation
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* DESKTOP MENU */}
-
-//         <div className="hidden items-center gap-6 lg:flex">
-//           <Link
-//             to="/dashboard"
-
-//             className="transition hover:text-[#ff9710]"
-//           >
-//             Dashboard
-//           </Link>
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <Link
-//               to="/reconciliation/run"
-
-//               className="transition hover:text-[#ff9710]"
-//             >
-//               Run Reconciliation
-//             </Link>
-//           )}
-
-//           {user?.role === 'ADMIN' && (
-//             <Link
-//               to="/users"
-
-//               className="transition hover:text-[#ff9710]"
-//             >
-//               User Management
-//             </Link>
-//           )}
-
-//           <div className="flex items-center gap-3 border-l border-white/30 pl-5">
-//             <FaBell />
-
-//             <FaUserCircle size={28} />
-
-//             <div className="text-sm">
-//               <p className="font-semibold">{user?.name}</p>
-
-//               <p className="text-xs text-gray-200">{user?.role}</p>
-//             </div>
-
-//             <button
-//               onClick={logout}
-
-//               className="rounded-lg bg-[#ff9710] px-4 py-2 font-semibold hover:opacity-90"
-//             >
-//               Logout
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* MOBILE BUTTON */}
-
-//         <button
-//           onClick={() => setOpen(!open)}
-
-//           className="text-white lg:hidden"
-//         >
-//           {open ? <FaTimes size={25} /> : <FaBars size={25} />}
-//         </button>
-//       </div>
-
-//       {/* MOBILE MENU */}
-
-//       {open && (
-//         <div className="space-y-4 bg-[#1c225f] px-5 py-5 lg:hidden">
-//           <Link
-//             onClick={closeMenu}
-
-//             to="/dashboard"
-
-//             className="block hover:text-[#ff9710]"
-//           >
-//             Dashboard
-//           </Link>
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <Link
-//               onClick={closeMenu}
-
-//               to="/reconciliation/run"
-
-//               className="block hover:text-[#ff9710]"
-//             >
-//               Run Reconciliation
-//             </Link>
-//           )}
-
-//           {user?.role === 'ADMIN' && (
-//             <Link
-//               onClick={closeMenu}
-
-//               to="/users"
-
-//               className="block hover:text-[#ff9710]"
-//             >
-//               User Management
-//             </Link>
-//           )}
-
-//           <div className="flex items-center justify-between border-t border-white/20 pt-4">
-//             <div className="flex items-center gap-3">
-//               <FaUserCircle size={30} />
-
-//               <div>
-//                 <p className="font-bold">{user?.name}</p>
-
-//                 <p className="text-xs">{user?.role}</p>
-//               </div>
-//             </div>
-
-//             <button
-//               onClick={() => {
-//                 logout();
-
-//                 closeMenu();
-//               }}
-
-//               className="rounded-lg bg-[#ff9710] px-4 py-2 font-semibold"
-//             >
-//               Logout
-//             </button>
-//           </div>
-//         </div>
-//       )}
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
-// import { useState } from 'react';
-// import logo from '../assets/logo.png';
-// import { Link } from 'react-router-dom';
-
-// import {
-//   FaBell,
-//   FaUserCircle,
-//   FaBars,
-//   FaTimes,
-//   FaUniversity,
-//   FaSyncAlt,
-//   FaUsers,
-//   FaEnvelope,
-//   FaCalendarAlt,
-// } from 'react-icons/fa';
-
-// import { useAuth } from '../context/authContext';
-
-// import api from '../api/axios';
-
-// const Navbar = () => {
-//   const { user, logout } = useAuth();
-
-//   const [open, setOpen] = useState(false);
-
-//   const [reconStatus, setReconStatus] = useState(null);
-
-//   const closeMenu = () => {
-//     setOpen(false);
-//   };
-
-//   const runReconciliation = async () => {
-//     try {
-//       setReconStatus('RUNNING');
-
-//       await api.post('/reconciliation/run');
-
-//       setReconStatus('SUCCESS');
-
-//       setTimeout(() => {
-//         window.location.reload();
-//       }, 2000);
-//     } catch (error) {
-//       console.error('Reconciliation failed', error);
-
-//       setReconStatus('FAILED');
-
-//       setTimeout(() => {
-//         setReconStatus(null);
-//       }, 3000);
-//     }
-//   };
-
-//   return (
-//     <nav className="bg-[#232A78] text-white shadow-lg">
-//       <div className="mx-auto flex max-w-full items-center justify-between px-4 py-4">
-//         {/* LOGO */}
-//         {/* <img
-//           src={logo}
-//           alt="EDRMS Logo"
-//           className="h-12 w-12 rounded-lg bg-white object-contain p-1"
-//         /> */}
-//         <div className="flex items-center gap-3">
-//           <div className="rounded-lg bg-white p-2 text-[#232A78]">
-//             <FaUniversity size={22} />
-//           </div>
-
-//           <div>
-//             <h1 className="text-xl font-bold">EDRMS</h1>
-
-//             <p className="hidden text-xs text-gray-200 sm:block">
-//               Enterprise Deposit Reconciliation
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* DESKTOP MENU */}
-
-//         <div className="hidden items-center gap-6 lg:flex">
-//           <Link
-//             to="/dashboard"
-
-//             className="transition hover:text-[#ff9710]"
-//           >
-//             Dashboard
-//           </Link>
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <button
-//               onClick={runReconciliation}
-
-//               className="flex items-center gap-2 transition hover:text-[#ff9710]"
-//             >
-//               <FaSyncAlt />
-//               Run Reconciliation
-//             </button>
-//           )}
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <Link
-//               to="/users"
-
-//               className="flex items-center gap-2 transition hover:text-[#ff9710]"
-//             >
-//               <FaUsers />
-//               Users
-//             </Link>
-//           )}
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <Link
-//               to="/notifications"
-
-//               className="flex items-center gap-2 transition hover:text-[#ff9710]"
-//             >
-//               <FaEnvelope />
-//               Notification
-//             </Link>
-//           )}
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <Link
-//               to="/admin/scheduler"
-
-//               className="flex items-center gap-2 transition hover:text-[#ff9710]"
-//             >
-//               <FaCalendarAlt />
-//               Shedule
-//             </Link>
-//           )}
-
-//           <div className="flex items-center gap-3 border-l border-white/30 pl-5">
-//             <FaBell />
-
-//             <FaUserCircle size={28} />
-
-//             <div className="text-sm">
-//               <p className="font-semibold">{user?.name}</p>
-
-//               <p className="text-xs text-gray-200">{user?.role}</p>
-//             </div>
-
-//             <button
-//               onClick={logout}
-
-//               className="rounded-lg bg-[#ff9710] px-4 py-2 font-semibold hover:opacity-90"
-//             >
-//               Logout
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* MOBILE BUTTON */}
-
-//         <button
-//           onClick={() => setOpen(!open)}
-
-//           className="text-white lg:hidden"
-//         >
-//           {open ? <FaTimes size={25} /> : <FaBars size={25} />}
-//         </button>
-//       </div>
-
-//       {/* MOBILE MENU */}
-
-//       {open && (
-//         <div className="space-y-4 bg-[#1c225f] px-5 py-5 lg:hidden">
-//           <Link
-//             onClick={closeMenu}
-
-//             to="/dashboard"
-
-//             className="block hover:text-[#ff9710]"
-//           >
-//             Dashboard
-//           </Link>
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <button
-//               onClick={() => {
-//                 closeMenu();
-
-//                 runReconciliation();
-//               }}
-
-//               className="flex items-center gap-2 hover:text-[#ff9710]"
-//             >
-//               <FaSyncAlt />
-//               Run Reconciliationn
-//             </button>
-//           )}
-
-//           {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
-//             <button
-//               onClick={() => {
-//                 closeMenu();
-
-//                 runReconciliation();
-//               }}
-
-//               className="flex items-center gap-2 hover:text-[#ff9710]"
-//             >
-//               <FaSyncAlt />
-//               Scheduler Management
-//             </button>
-//           )}
-
-//           {user?.role === 'ADMIN' && (
-//             <Link
-//               onClick={closeMenu}
-
-//               to="/users"
-
-//               className="block hover:text-[#ff9710]"
-//             >
-//               User Management
-//             </Link>
-//           )}
-
-//           <div className="flex items-center justify-between border-t border-white/20 pt-4">
-//             <div className="flex items-center gap-3">
-//               <FaUserCircle size={30} />
-
-//               <div>
-//                 <p className="font-bold">{user?.name}</p>
-
-//                 <p className="text-xs">{user?.role}</p>
-//               </div>
-//             </div>
-
-//             <button
-//               onClick={() => {
-//                 logout();
-
-//                 closeMenu();
-//               }}
-
-//               className="rounded-lg bg-[#ff9710] px-4 py-2 font-semibold"
-//             >
-//               Logout
-//             </button>
-//           </div>
-//         </div>
-//       )}
-
-//       {/* RECONCILIATION OVERLAY */}
-
-//       {reconStatus && (
-//         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
-//           <div className="rounded-xl bg-white p-8 text-center text-gray-800 shadow-2xl">
-//             {reconStatus === 'RUNNING' && (
-//               <>
-//                 <FaSyncAlt
-//                   className="mx-auto mb-5 animate-spin text-[#232A78]"
-
-//                   size={45}
-//                 />
-
-//                 <h2 className="text-xl font-bold">Running Reconciliation</h2>
-
-//                 <p className="mt-3 text-gray-600">Please wait...</p>
-//               </>
-//             )}
-
-//             {reconStatus === 'SUCCESS' && (
-//               <>
-//                 <h2 className="text-xl font-bold text-green-600">✓ Completed Successfully</h2>
-//               </>
-//             )}
-
-//             {reconStatus === 'FAILED' && (
-//               <>
-//                 <h2 className="text-xl font-bold text-red-600">✕ Reconciliation Failed</h2>
-//               </>
-//             )}
-//           </div>
-//         </div>
-//       )}
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
-
-
-
-import { useState } from "react";
-import logo from "../assets/logo.png";
-import { Link } from "react-router-dom";
-
+import { useState } from 'react';
+import logo from '../assets/logo.png';
+import { Link } from 'react-router-dom';
+import { MdDashboard } from 'react-icons/md';
 import {
   FaBell,
   FaUserCircle,
@@ -466,10 +12,10 @@ import {
   FaUsers,
   FaEnvelope,
   FaCalendarAlt,
-} from "react-icons/fa";
+} from 'react-icons/fa';
 
-import { useAuth } from "../context/authContext";
-import api from "../api/axios";
+import { useAuth } from '../context/authContext';
+import api from '../api/axios';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -490,22 +36,22 @@ const Navbar = () => {
   // =====================================================
   const runReconciliation = async () => {
     // Prevent multiple clicks while reconciliation is running
-    if (reconStatus === "RUNNING") {
+    if (reconStatus === 'RUNNING') {
       return;
     }
 
     try {
       // Show spinning icon
-      setReconStatus("RUNNING");
+      setReconStatus('RUNNING');
 
-      console.log("Starting reconciliation...");
+      console.log('Starting reconciliation...');
 
-      await api.post("/reconciliation/run");
+      await api.post('/reconciliation/run');
 
-      console.log("Reconciliation completed successfully.");
+      console.log('Reconciliation completed successfully.');
 
       // Stop spinning
-      setReconStatus("SUCCESS");
+      setReconStatus('SUCCESS');
 
       // Give the user a short indication of success
       // then reload the page to show the latest dashboard data
@@ -513,10 +59,10 @@ const Navbar = () => {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      console.error("Reconciliation failed:", error);
+      console.error('Reconciliation failed:', error);
 
       // Stop spinning and show failed state
-      setReconStatus("FAILED");
+      setReconStatus('FAILED');
 
       // Return to normal button after 3 seconds
       setTimeout(() => {
@@ -529,21 +75,12 @@ const Navbar = () => {
   // RENDER RECONCILIATION ICON
   // =====================================================
   const renderReconciliationIcon = () => {
-    if (reconStatus === "RUNNING") {
-      return (
-        <FaSyncAlt
-          className="animate-spin"
-          size={15}
-        />
-      );
+    if (reconStatus === 'RUNNING') {
+      return <FaSyncAlt className="animate-spin" size={15} />;
     }
 
-    if (reconStatus === "SUCCESS") {
-      return (
-        <FaSyncAlt
-          size={15}
-        />
-      );
+    if (reconStatus === 'SUCCESS') {
+      return <FaSyncAlt size={15} />;
     }
 
     return <FaSyncAlt size={15} />;
@@ -559,23 +96,17 @@ const Navbar = () => {
         {/* =====================================================
             LOGO
         ===================================================== */}
+        <Link to="/dashboard" className="cursor-pointer">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="EDRMS Logo" className="h-10 w-10 object-contain" />
 
-        <div className="flex items-center gap-3">
-          <img
-            src={logo}
-            alt="EDRMS Logo"
-            className="h-10 w-10 object-contain"
-          />
+            <div>
+              <h1 className="text-xl font-bold">Awash Bank</h1>
 
-          <div>
-            <h1 className="text-xl font-bold">EDRMS</h1>
-
-            <p className="hidden text-xs text-gray-200 sm:block">
-              Enterprise Deposit Reconciliation
-            </p>
+              <p className="text-xs text-gray-200 sm:block">Nurturing like the River</p>
+            </div>
           </div>
-        </div>
-
+        </Link>
         {/* =====================================================
             DESKTOP MENU
         ===================================================== */}
@@ -583,10 +114,8 @@ const Navbar = () => {
         <div className="hidden items-center gap-6 lg:flex">
           {/* Dashboard */}
 
-          <Link
-            to="/dashboard"
-            className="transition hover:text-[#ff9710]"
-          >
+          <Link to="/dashboard" className="flex items-center gap-2 transition hover:text-[#ff9710]">
+            <MdDashboard />
             Dashboard
           </Link>
 
@@ -594,72 +123,64 @@ const Navbar = () => {
               RUN RECONCILIATION
           ===================================================== */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <button
-                onClick={runReconciliation}
-                disabled={reconStatus === "RUNNING"}
-                className={`flex items-center gap-2 transition ${reconStatus === "RUNNING"
-                  ? "cursor-not-allowed text-gray-300"
-                  : "hover:text-[#ff9710]"
-                  }`}
-              >
-                {/* Spinning icon while running */}
+          {(user?.role === 'SUPERADMIN' || user?.role === 'SUPEROPERATOR') && (
+            <button
+              onClick={runReconciliation}
+              disabled={reconStatus === 'RUNNING'}
+              className={`flex items-center gap-2 transition ${
+                reconStatus === 'RUNNING'
+                  ? 'cursor-not-allowed text-gray-300'
+                  : 'hover:text-[#ff9710]'
+              }`}
+            >
+              {/* Spinning icon while running */}
 
-                <span className="flex items-center justify-center">
-                  {renderReconciliationIcon()}
-                </span>
+              <span className="flex items-center justify-center">{renderReconciliationIcon()}</span>
 
-                {/* Button text */}
+              {/* Button text */}
 
-                {reconStatus === "RUNNING"
-                  ? "Running..."
-                  : reconStatus === "SUCCESS"
-                    ? "Completed"
-                    : reconStatus === "FAILED"
-                      ? "Failed"
-                      : "Run Reconciliation"}
-              </button>
-            )}
+              {reconStatus === 'RUNNING'
+                ? 'Running...'
+                : reconStatus === 'SUCCESS'
+                  ? 'Completed'
+                  : reconStatus === 'FAILED'
+                    ? 'Failed'
+                    : 'Run Reconciliation'}
+            </button>
+          )}
 
           {/* Users */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <Link
-                to="/users"
-                className="flex items-center gap-2 transition hover:text-[#ff9710]"
-              >
-                <FaUsers />
-                Users
-              </Link>
-            )}
+          {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
+            <Link to="/users" className="flex items-center gap-2 transition hover:text-[#ff9710]">
+              <FaUsers />
+              Users
+            </Link>
+          )}
 
           {/* Notification */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <Link
-                to="/notifications"
-                className="flex items-center gap-2 transition hover:text-[#ff9710]"
-              >
-                <FaEnvelope />
-                Notification
-              </Link>
-            )}
+          {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
+            <Link
+              to="/notifications"
+              className="flex items-center gap-2 transition hover:text-[#ff9710]"
+            >
+              <FaEnvelope />
+              Notification
+            </Link>
+          )}
 
           {/* Scheduler */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <Link
-                to="/admin/scheduler"
-                className="flex items-center gap-2 transition hover:text-[#ff9710]"
-              >
-                <FaCalendarAlt />
-                Shedule
-              </Link>
-            )}
+          {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
+            <Link
+              to="/admin/scheduler"
+              className="flex items-center gap-2 transition hover:text-[#ff9710]"
+            >
+              <FaCalendarAlt />
+              Shedule
+            </Link>
+          )}
 
           {/* =====================================================
               USER INFORMATION
@@ -671,13 +192,9 @@ const Navbar = () => {
             <FaUserCircle size={28} />
 
             <div className="text-sm">
-              <p className="font-semibold">
-                {user?.name}
-              </p>
+              <p className="font-semibold">{user?.name}</p>
 
-              <p className="text-xs text-gray-200">
-                {user?.role}
-              </p>
+              <p className="text-xs text-gray-200">{user?.role}</p>
             </div>
 
             <button
@@ -693,15 +210,8 @@ const Navbar = () => {
             MOBILE BUTTON
         ===================================================== */}
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="text-white lg:hidden"
-        >
-          {open ? (
-            <FaTimes size={25} />
-          ) : (
-            <FaBars size={25} />
-          )}
+        <button onClick={() => setOpen(!open)} className="text-white lg:hidden">
+          {open ? <FaTimes size={25} /> : <FaBars size={25} />}
         </button>
       </div>
 
@@ -713,11 +223,8 @@ const Navbar = () => {
         <div className="space-y-4 bg-[#1c225f] px-5 py-5 lg:hidden">
           {/* Dashboard */}
 
-          <Link
-            onClick={closeMenu}
-            to="/dashboard"
-            className="block hover:text-[#ff9710]"
-          >
+          <Link to="/dashboard" className="flex items-center gap-2 transition hover:text-[#ff9710]">
+            <MdDashboard />
             Dashboard
           </Link>
 
@@ -725,58 +232,66 @@ const Navbar = () => {
               MOBILE RUN RECONCILIATION
           ===================================================== */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <button
-                onClick={() => {
-                  closeMenu();
-                  runReconciliation();
-                }}
-                disabled={reconStatus === "RUNNING"}
-                className={`flex items-center gap-2 ${reconStatus === "RUNNING"
-                  ? "cursor-not-allowed text-gray-300"
-                  : "hover:text-[#ff9710]"
-                  }`}
-              >
-                {/* Spinning icon */}
+          {(user?.role === 'SUPERADMIN' || user?.role === 'SUPEROPERATOR') && (
+            <button
+              onClick={() => {
+                closeMenu();
+                runReconciliation();
+              }}
+              disabled={reconStatus === 'RUNNING'}
+              className={`flex items-center gap-2 ${
+                reconStatus === 'RUNNING'
+                  ? 'cursor-not-allowed text-gray-300'
+                  : 'hover:text-[#ff9710]'
+              }`}
+            >
+              {/* Spinning icon */}
 
-                <span className="flex items-center justify-center">
-                  {renderReconciliationIcon()}
-                </span>
+              <span className="flex items-center justify-center">{renderReconciliationIcon()}</span>
 
-                {reconStatus === "RUNNING"
-                  ? "Running..."
-                  : reconStatus === "SUCCESS"
-                    ? "Completed"
-                    : reconStatus === "FAILED"
-                      ? "Failed"
-                      : "Run Reconciliation"}
-              </button>
-            )}
+              {reconStatus === 'RUNNING'
+                ? 'Running...'
+                : reconStatus === 'SUCCESS'
+                  ? 'Completed'
+                  : reconStatus === 'FAILED'
+                    ? 'Failed'
+                    : 'Run Reconciliation'}
+            </button>
+          )}
 
           {/* Scheduler Management */}
 
-          {(user?.role === "ADMIN" ||
-            user?.role === "OPERATOR") && (
-              <Link
-                onClick={closeMenu}
-                to="/admin/scheduler"
-                className="flex items-center gap-2 hover:text-[#ff9710]"
-              >
-                <FaCalendarAlt />
-                Scheduler Management
-              </Link>
-            )}
+          {(user?.role === 'ADMIN' || user?.role === 'OPERATOR') && (
+            <Link
+              onClick={closeMenu}
+              to="/admin/scheduler"
+              className="flex items-center gap-2 hover:text-[#ff9710]"
+            >
+              <FaCalendarAlt />
+              Scheduler Management
+            </Link>
+          )}
 
           {/* Users */}
 
-          {user?.role === "ADMIN" && (
+          {user?.role === 'ADMIN' && (
             <Link
               onClick={closeMenu}
               to="/users"
-              className="block hover:text-[#ff9710]"
+              className="flex items-center gap-2 hover:text-[#ff9710]"
             >
+              <FaUsers />
               User Management
+            </Link>
+          )}
+          {user?.role === 'ADMIN' && (
+            <Link
+              onClick={closeMenu}
+              to="/notifications"
+              className="flex items-center gap-2 hover:text-[#ff9710]"
+            >
+              <FaEnvelope />
+              Notification
             </Link>
           )}
 
@@ -789,13 +304,9 @@ const Navbar = () => {
               <FaUserCircle size={30} />
 
               <div>
-                <p className="font-bold">
-                  {user?.name}
-                </p>
+                <p className="font-bold">{user?.name}</p>
 
-                <p className="text-xs">
-                  {user?.role}
-                </p>
+                <p className="text-xs">{user?.role}</p>
               </div>
             </div>
 
